@@ -394,6 +394,61 @@ setup_saves_to_keychain() {
         grep -qx "add-generic-password -U -s wificonnector -a 22BCE1234 -l wificonnector (VIT Wi-Fi) -T /usr/bin/security -w" "$STUB_DIR/security_calls"
 }
 
+set_credentials_reads_stdin() {
+    printf '%s\n' 'p@ss w0rd&1' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials " 26bce0193" > "$SANDBOX/out" 2>&1
+    check "username normalized into config" grep -qx "USERNAME=26BCE0193" "$HOME/.config/wificonnector/config"
+    check "saved via security's prompt" \
+        grep -qx "add-generic-password -U -s wificonnector -a 26BCE0193 -l wificonnector (VIT Wi-Fi) -T /usr/bin/security -w" "$STUB_DIR/security_calls"
+    check "password typed twice on stdin" [ "$(cat "$STUB_DIR/security_stdin")" = "$(printf 'p@ss w0rd&1\np@ss w0rd&1')" ]
+    check "password never in an argument" not grep -qF 'p@ss' "$STUB_DIR/security_calls"
+    check "password never printed" not grep -qF 'p@ss' "$SANDBOX/out"
+}
+
+set_credentials_needs_a_password() {
+    printf '' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials 26BCE0193 > "$SANDBOX/out" 2>&1
+    check "fails" [ $? -ne 0 ]
+    check "saves nothing" [ "$(count "$STUB_DIR/security_calls")" = 0 ]
+    check "says why" grep -q "no password" "$SANDBOX/out"
+}
+
+pause_and_resume() {
+    with_credentials
+    behind_pronto
+    wc_run pause
+    wc_run run
+    check "no login while paused" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+    check "state is paused" [ "$(state)" = paused ]
+    wc_run resume
+    wc_run run
+    check "logs in after resume" [ "$(count "$STUB_DIR/login_urls")" = 1 ]
+}
+
+info_reports_state() {
+    with_credentials
+    wc_run run
+    mkdir -p "$HOME/Library/Logs"
+    printf '2026-10-25 23:54:40 Logged in; internet is up\n' > "$HOME/Library/Logs/wificonnector.log"
+    wc_run info
+    check "version" grep -qx "version=0.2.0" "$SANDBOX/out"
+    check "state" grep -qx "state=online" "$SANDBOX/out"
+    check "not paused" grep -qx "paused=no" "$SANDBOX/out"
+    check "user" grep -qx "user=22BCE1234" "$SANDBOX/out"
+    check "credentials found" grep -qx "credentials=yes" "$SANDBOX/out"
+    check "agent loaded" grep -qx "agent=yes" "$SANDBOX/out"
+    check "last log line" grep -qx "last=2026-10-25 23:54:40 Logged in; internet is up" "$SANDBOX/out"
+    check "never reads the password" not grep -q -- "-w" "$STUB_DIR/security_calls"
+    check "no network requests (only the earlier run's probe)" [ "$(grep -c . "$STUB_DIR/curl_calls")" = 1 ]
+}
+
+info_when_nothing_is_set_up() {
+    export STUB_AGENT_MISSING=1
+    wc_run info
+    check "no user" grep -qx "user=" "$SANDBOX/out"
+    check "no credentials" grep -qx "credentials=no" "$SANDBOX/out"
+    check "no agent" grep -qx "agent=no" "$SANDBOX/out"
+    check "no state yet" grep -qx "state=" "$SANDBOX/out"
+}
+
 install_writes_valid_agent() {
     wc_run install
     local plist="$HOME/Library/LaunchAgents/com.wificonnector.agent.plist"
@@ -463,6 +518,11 @@ for t in \
     quiet_when_nothing_changes \
     run_skips_when_locked \
     setup_saves_to_keychain \
+    set_credentials_reads_stdin \
+    set_credentials_needs_a_password \
+    pause_and_resume \
+    info_reports_state \
+    info_when_nothing_is_set_up \
     install_writes_valid_agent \
     uninstall_purge \
     status_reports_portal
