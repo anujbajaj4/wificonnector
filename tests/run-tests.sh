@@ -282,6 +282,7 @@ run_skips_when_locked() {
 
 setup_saves_to_keychain() {
     printf ' 22bce1234 \n' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" setup > "$SANDBOX/out" 2>&1
+    check "next step names the command as invoked" grep -qF "Run '$SCRIPT login'" "$SANDBOX/out"
     check "username normalized into config" grep -qx "USERNAME=22BCE1234" "$HOME/.config/wificonnector/config"
     check "config is private" [ "$(stat -c %a "$HOME/.config/wificonnector/config" 2>/dev/null || stat -f %Lp "$HOME/.config/wificonnector/config")" = 600 ]
     check "keychain item, security pre-authorized, password prompted by security" \

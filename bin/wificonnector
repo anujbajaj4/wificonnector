@@ -501,7 +501,8 @@ cmd_setup() {
     fi
     config_set USERNAME "$user" || die "couldn't write $CONFIG_FILE"
     mkdir -p "$STATE_DIR" && rm -f "$STATE_DIR/rejected"
-    echo "Saved. Run 'wificonnector login' to test it, then 'wificonnector install'."
+    # $0 is how this was invoked (e.g. bin/wificonnector), which works before install.
+    echo "Saved. Run '$0 login' to test it, then '$0 install'."
 }
 
 cmd_status() {
