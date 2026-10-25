@@ -323,9 +323,11 @@ login_pronto() {
     local user=$1 password=$2 gateway=$3 rc
     pronto_post "$pronto_fingerprint" "$user" "$password"
     rc=$?
-    if [ "$rc" -eq 6 ] && [ -n "$gateway" ]; then
-        # The portal host didn't resolve; Latch then talks to the gateway directly.
-        log "Portal host didn't resolve; retrying via gateway $gateway"
+    if { [ "$rc" -eq 6 ] || [ "$rc" -eq 7 ]; } && [ -n "$gateway" ]; then
+        # The portal host didn't resolve (6), or the Mac has no route to it
+        # before login (7: e.g. no default route, or a VPN blocking all but the
+        # local network). Latch's fallback: the gateway, which is always local.
+        log "Portal host unreachable (curl exit $rc); retrying via the gateway"
         pronto_post "$gateway" "$user" "$password"
         rc=$?
     elif [ "$rc" -ne 0 ]; then
@@ -644,7 +646,9 @@ addr_kind() {
 }
 
 route_interface() {
-    route -n get "$1" 2>/dev/null | awk '/interface:/ { print $2; exit }'
+    local interface
+    interface=$(route -n get "$1" 2>/dev/null | awk '/interface:/ { print $2; exit }')
+    printf '%s' "${interface:-no route}"
 }
 
 # One request, summarised; a redirect to a bare address shows only its kind.
@@ -701,10 +705,16 @@ cmd_diagnose() {
         addr_kind "$ns"
     done | sort -u | paste -s -d ';' -)
     echo "Mac's DNS:      ${kinds:-none}"
-    echo "Default route:  via $(route_interface default) (utun* = a VPN tunnel)"
+    echo "Default route:  $(route_interface default) (utun* = a VPN tunnel)"
+    if command -v warp-cli >/dev/null 2>&1; then
+        echo "Cloudflare:     $(warp-cli status 2>/dev/null | tr '\n' ' ')"
+    fi
     diagnose_host "$PROBE_HOST" /generate_204
     diagnose_host "$pronto_fingerprint" "$PRONTO_LOGIN_PATH"
-    [ -n "$gateway" ] && echo "gateway:             $(try_url "http://$gateway/")"
+    if [ -n "$gateway" ]; then
+        echo "gateway:             $(try_url "http://$gateway/")"
+        echo "gateway login page:  $(try_url "http://$gateway$PRONTO_LOGIN_PATH")"
+    fi
     echo "raw IP, no DNS:      $(try_url http://1.1.1.1/)"
     echo "SSID readable:  $([ -n "$(read_ssid "$device")" ] && echo yes || echo "no (hidden by macOS)")"
 }

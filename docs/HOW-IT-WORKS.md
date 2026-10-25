@@ -104,7 +104,17 @@ apart), because a VPN needs a few seconds to reconnect once the portal opens.
 with every address replaced by its kind, so the output can be shared safely.
 
 Then the login POST goes to `phc.prontonetworks.com` (resolved through the
-network's DNS), or, if that fails, to the gateway IP, Latch's fallback.
+network's DNS), or, if that can't be resolved or reached, to the gateway IP,
+Latch's fallback.
+
+**No route before login.** On that MacBook (macOS 27), `diagnose` showed that
+while logged out the Mac had **no default route** at all, even with the
+Cloudflare app off: every address outside the local subnet failed instantly
+(exit 7), including the portal's own private address, while the gateway (on the
+subnet) answered. Apple's login pop-up still worked, since system services
+can get exceptions ordinary programs don't. So the gateway is the one thing a
+script can always reach before login, and both the fingerprint and the login
+fall back to it.
 
 ## 3. The Pronto login protocol
 
@@ -150,6 +160,8 @@ Latch; 5 in wificonnector, see §2) and only call it a success when it returns
 
 - If `phc.prontonetworks.com` doesn't resolve, send the same request to the
   network's **gateway IP** (`ipconfig getoption en0 router`) instead.
+  wificonnector also does this when the portal resolves but can't be
+  *reached* (curl exit 7), for the reason in §2.
 - If the request fails on the network (timeout, reset), try once more.
 
 **Logout** is `GET http://phc.prontonetworks.com/cgi-bin/authlogout`.

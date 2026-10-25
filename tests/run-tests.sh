@@ -264,6 +264,19 @@ no_network_dns_resolves_normally() {
     check "state is online" [ "$(state)" = online ]
 }
 
+no_route_to_portal_retries_via_gateway() {
+    # No default route before login: the portal's address fails to connect
+    # (exit 7), but the gateway is on the local network.
+    with_credentials
+    behind_pronto
+    export STUB_LOGIN_RC=7
+    wc_run run
+    check "second POST went to the gateway" \
+        grep -qxF "http://172.18.0.1/cgi-bin/authlogin?URI=http://example.com" "$STUB_DIR/login_urls"
+    check "state is online" [ "$(state)" = online ]
+    check "gateway address not logged" not grep -qF "172.18.0.1" "$SANDBOX/out"
+}
+
 network_error_retries_once() {
     with_credentials
     behind_pronto
@@ -311,7 +324,7 @@ diagnose_shows_no_addresses() {
     export STUB_VPN=1
     wc_run diagnose
     check "names the Cloudflare app's resolvers" grep -q "Mac's DNS:      loopback" "$SANDBOX/out"
-    check "spots the VPN default route" grep -q "Default route:  via utun4" "$SANDBOX/out"
+    check "spots the VPN default route" grep -q "Default route:  utun4" "$SANDBOX/out"
     check "reports the gateway's redirect" grep -q "^gateway: .*redirect-to=phc.prontonetworks.com" "$SANDBOX/out"
     check "prints no IPv4 address" not grep -qE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' "$SANDBOX/out"
 }
@@ -430,6 +443,7 @@ for t in \
     redirect_response_is_success \
     rejected_login_backs_off \
     dns_failure_retries_via_gateway \
+    no_route_to_portal_retries_via_gateway \
     custom_dns_blocked_uses_network_dns \
     all_dns_blocked_uses_gateway_fingerprint \
     all_dns_blocked_foreign_gateway \
