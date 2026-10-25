@@ -66,8 +66,9 @@ tail -f ~/Library/Logs/wificonnector.log
 Only when **both** of these hold:
 
 1. The internet check is intercepted by a portal that redirects to
-   `phc.prontonetworks.com`, the VIT hostel portal. A café or hotel portal
-   never gets your credentials.
+   `phc.prontonetworks.com`, the VIT hostel portal. If your DNS is blocked
+   before login, the network's gateway must redirect there instead. A café or
+   hotel portal never gets your credentials.
 2. The Wi-Fi network's name contains `VIT`, if macOS reveals the name. Since
    macOS 14 the name is location data and usually hidden from command-line
    tools; then the portal check alone decides.
@@ -90,6 +91,7 @@ again, so a wrong password can't get your account locked.
 | Symptom | What to do |
 |---|---|
 | `status` shows `(name hidden by macOS)` | Normal on macOS 14+. To make it visible to the script: `sudo ipconfig setverbose 1` |
+| "DNS lookup failed" before login | You use a custom DNS, the Cloudflare 1.1.1.1 app, a VPN or Private Relay. The script works around it (via the network's own DNS, then the gateway); if it still fails, send `wificonnector status` |
 | Log says "not a VIT portal" | The portal isn't Pronto (an academic block, perhaps). Run `curl -sv http://clients3.google.com/generate_204 -o /dev/null` and open an issue with the `Location:` line |
 | Log says "Login refused" | Check your password with `wificonnector setup`, then `wificonnector login` |
 | A "security wants to access" dialog | Choose **Always Allow**. It shows up if the Keychain item was created some other way |

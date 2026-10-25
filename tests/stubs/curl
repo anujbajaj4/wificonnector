@@ -2,19 +2,35 @@
 # Fake curl: answers the probe, login and logout URLs from STUB_* variables
 # and records every call in $STUB_DIR.
 printf '%s\n' "$*" >> "$STUB_DIR/curl_calls"
-out="" headers="" format="" url="" password_on_stdin=0
+out="" headers="" format="" url="" resolved="" password_on_stdin=0
 while [ $# -gt 0 ]; do
     case $1 in
         -o) out=$2; shift ;;
         -D) headers=$2; shift ;;
         -w) format=$2; shift ;;
         --data-urlencode) [ "$2" = "password@-" ] && password_on_stdin=1; shift ;;
+        --resolve) resolved="$resolved ${2%%:*}"; shift ;;
         --interface|--connect-timeout|--max-time|-A|-H) shift ;;
         http://*|https://*) url=$1 ;;
     esac
     shift
 done
 [ "$password_on_stdin" -eq 1 ] && cat > "$STUB_DIR/stdin_password"
+
+# STUB_SYSTEM_DNS_BLOCKED=1: before login the Mac's own resolver (say, the
+# Cloudflare app) gets no answers, so only hosts passed via --resolve work.
+host=${url#http://}
+host=${host%%/*}
+case $host in
+    *[!0-9.]*)
+        if [ "${STUB_SYSTEM_DNS_BLOCKED:-0}" = 1 ] && [ ! -f "$STUB_DIR/logged_in" ]; then
+            case " $resolved " in
+                *" $host "*) ;;
+                *) echo "curl: (6) Could not resolve host: $host" >&2; exit 6 ;;
+            esac
+        fi
+        ;;
+esac
 
 rc=0 code=200 body="" location=""
 case $url in
@@ -37,6 +53,11 @@ case $url in
         code=${STUB_LOGIN_CODE:-200}
         body=${STUB_LOGIN_BODY:-<html>Access granted</html>}
         [ "$rc" -eq 0 ] && : > "$STUB_DIR/logged_in"
+        ;;
+    http://[0-9]*/)
+        # The gateway's own web server, as VIT's redirects to the portal.
+        code=${STUB_GATEWAY_CODE:-302}
+        location=${STUB_GATEWAY_LOCATION-http://phc.prontonetworks.com/cgi-bin/authlogin}
         ;;
     *authlogout*)
         printf '%s\n' "$url" >> "$STUB_DIR/logout_urls"

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Fake dig: answers through the network's DNS server, like a captive portal's
+# own resolver does before login. STUB_DIG_FAIL=1 makes it unreachable.
+printf '%s\n' "$*" >> "$STUB_DIR/dig_calls"
+if [ "${STUB_DIG_FAIL:-0}" = 1 ]; then
+    echo ";; connection timed out; no servers could be reached"
+    exit 9
+fi
+for arg in "$@"; do
+    case $arg in
+        clients3.google.com) echo "clients.l.google.com."; echo "142.250.0.1" ;;
+        phc.prontonetworks.com) echo "10.10.0.10" ;;
+    esac
+done

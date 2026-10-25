@@ -37,7 +37,8 @@ REJECT_BACKOFF_SECONDS=300
 
 # Any HTTP URL that answers 204 with an empty body on the open internet. A
 # captive portal intercepts it, which is how we notice the portal.
-PROBE_URL="http://clients3.google.com/generate_204"
+PROBE_HOST="clients3.google.com"
+PROBE_URL="http://$PROBE_HOST/generate_204"
 
 # Latch sends this exact User-Agent from every platform; the portal is known
 # to accept it, so it is kept rather than "corrected" to a Mac one.
@@ -155,6 +156,32 @@ gateway_ip() {
     ipconfig getoption "$1" router 2>/dev/null
 }
 
+# The DNS server the Wi-Fi network hands out (DHCP). Set once per run by
+# use_network_dns; empty when the network gives none.
+NETWORK_DNS=""
+
+use_network_dns() {
+    NETWORK_DNS=$(ipconfig getoption "$1" domain_name_server 2>/dev/null)
+}
+
+# A captive portal blocks outside DNS servers (1.1.1.1, 8.8.8.8, a VPN's...)
+# until you log in, but answers lookups through its own. So the portal's
+# requests resolve their host through the network's DNS server and hand curl
+# the answer: prints "host:80:address" for curl --resolve, or nothing, in
+# which case curl resolves the name the normal way.
+pin_host() {
+    local host=$1 address
+    [ -n "$NETWORK_DNS" ] || return 0
+    case $host in
+        *[!0-9.]*) ;;
+        *) return 0 ;;  # already an IP address
+    esac
+    address=$(dig +short +time=2 +tries=1 "@$NETWORK_DNS" "$host" A 2>/dev/null |
+        grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+    [ -n "$address" ] && printf '%s:80:%s' "$host" "$address"
+    return 0
+}
+
 # The Wi-Fi network's name, or nothing when macOS won't say. Since macOS 14
 # the SSID is location data and command-line tools usually see "<redacted>";
 # that is treated as unknown, never as "not VIT".
@@ -196,11 +223,12 @@ is_campus_ssid() {
 # PROBE_RESULT to online, portal, dns or error; the portal's response is left
 # in $TMP/probe.headers and $TMP/probe.body for the fingerprint check.
 probe() {
-    local code rc
+    local code rc pin
     : > "$TMP/probe.headers"
     : > "$TMP/probe.body"
+    pin=$(pin_host "$PROBE_HOST")
     code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
-        --connect-timeout 3 --max-time 3 \
+        --connect-timeout 3 --max-time 3 ${pin:+--resolve "$pin"} \
         "$PROBE_URL" 2>"$TMP/probe.err")
     rc=$?
     PROBE_DETAIL=""
@@ -216,6 +244,21 @@ probe() {
         PROBE_RESULT="portal"
         PROBE_DETAIL="HTTP $code"
     fi
+}
+
+# When no lookup works at all, the probe can't even start. The gateway still
+# answers HTTP by address, and VIT's gateway redirects to the Pronto portal:
+# a fingerprint that needs no DNS. Leaves its response where detect_profile
+# looks; fails if the gateway doesn't answer.
+probe_gateway() {
+    local gateway=$1 code
+    [ -n "$gateway" ] || return 1
+    : > "$TMP/probe.headers"
+    : > "$TMP/probe.body"
+    code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
+        --connect-timeout 3 --max-time 3 \
+        "http://$gateway/" 2>/dev/null) || return 1
+    PROBE_DETAIL="DNS blocked; gateway answered HTTP $code"
 }
 
 # Prints the profile whose fingerprint appears in the probe's redirect or page.
@@ -252,10 +295,11 @@ revalidate() {
 # on stdin (password@-), so it never appears in the process list. Sets
 # HTTP_CODE and returns curl's exit status.
 pronto_post() {
-    local host=$1 user=$2 password=$3
+    local host=$1 user=$2 password=$3 pin
     : > "$TMP/login.body"
+    pin=$(pin_host "$host")
     HTTP_CODE=$(printf '%s' "$password" | curl -sS -o "$TMP/login.body" -w '%{http_code}' \
-        --connect-timeout 5 --max-time 10 \
+        --connect-timeout 5 --max-time 10 ${pin:+--resolve "$pin"} \
         -A "$PORTAL_USER_AGENT" \
         -H 'Content-Type: application/x-www-form-urlencoded' \
         --data-urlencode "userId=$user" \
@@ -307,9 +351,10 @@ login_pronto() {
 }
 
 logout_pronto() {
-    local gateway=$1 code rc
+    local gateway=$1 code rc pin
+    pin=$(pin_host "$pronto_fingerprint")
     code=$(curl -sS -o /dev/null -w '%{http_code}' \
-        --connect-timeout 3 --max-time 5 \
+        --connect-timeout 3 --max-time 5 ${pin:+--resolve "$pin"} \
         "http://$pronto_fingerprint$PRONTO_LOGOUT_PATH" 2>"$TMP/logout.err")
     rc=$?
     if [ "$rc" -eq 6 ] && [ -n "$gateway" ]; then
@@ -350,13 +395,23 @@ check_and_login() {
         return 1
     fi
 
+    use_network_dns "$device"
     probe
     case $PROBE_RESULT in
         online)
             transition online "Online ($device, $ip)"
             return 0
             ;;
-        dns|error)
+        dns)
+            # Only a DNS failure falls back to the gateway: it's what a portal
+            # looks like when every lookup is blocked before login. Logged in,
+            # lookups work, so this can't cause logins on a healthy session.
+            if ! probe_gateway "$(gateway_ip "$device")"; then
+                transition probe-failed "Couldn't check for a captive portal: $PROBE_DETAIL, and the gateway didn't answer"
+                return 1
+            fi
+            ;;
+        error)
             transition probe-failed "Couldn't check for a captive portal: $PROBE_DETAIL"
             return 1
             ;;
@@ -466,6 +521,7 @@ cmd_logout() {
     setup_runtime
     device=$(wifi_device) || die "no Wi-Fi interface found"
     gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
     if [ "${1:-}" != "--no-pause" ]; then
         # Without this the agent would log straight back in within 15 seconds.
         : > "$STATE_DIR/paused"
@@ -516,11 +572,16 @@ cmd_status() {
     ip=$(ipconfig getifaddr "$device" 2>/dev/null)
     ssid=$(read_ssid "$device")
     gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
     echo "Wi-Fi:        $device, ${ip:-not connected}"
     echo "Network:      ${ssid:-(name hidden by macOS)}"
     echo "Gateway:      ${gateway:--}"
+    echo "Network DNS:  ${NETWORK_DNS:-none offered}"
     if [ -n "$ip" ]; then
         probe
+        if [ "$PROBE_RESULT" = "dns" ] && probe_gateway "$gateway"; then
+            PROBE_RESULT="portal"
+        fi
         case $PROBE_RESULT in
             online) echo "Internet:     online" ;;
             portal)

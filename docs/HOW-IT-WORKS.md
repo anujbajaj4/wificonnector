@@ -63,6 +63,34 @@ curl -sv --max-time 3 http://clients3.google.com/generate_204 -o /dev/null
 Behind the portal you'll see a `302` with a `Location:` header pointing at
 `phc.prontonetworks.com`. Once you're logged in it's `HTTP/1.1 204 No Content`.
 
+### When DNS is blocked too
+
+Before you log in, a portal usually answers DNS lookups only through **its
+own** DNS server, the one the network hands out when you connect. If your Mac
+uses another resolver (a custom DNS like `1.1.1.1`, the Cloudflare 1.1.1.1
+app, a VPN, iCloud Private Relay), every lookup fails until you're logged in.
+curl then can't even start the probe (exit 6, "DNS lookup failed"), so there's
+no redirect to see.
+
+This was the first real-world failure on a MacBook Air at VIT running the
+Cloudflare app. The script handles it in two layers:
+
+1. **Ask the network's DNS server directly.** `ipconfig getoption en0
+   domain_name_server` gives the server the network handed out, `dig
+   @<server> <host>` asks it, and `curl --resolve host:80:<address>` uses the
+   answer for that one request. Only the probe, login and logout requests do
+   this; everything else on the Mac keeps using your resolver.
+2. **Recognize the portal without DNS.** If even that fails, the script
+   requests the gateway by its IP address (`http://<gateway>/`). VIT's gateway
+   answers with a `302` to `phc.prontonetworks.com`, which is the same
+   fingerprint, obtained without a single lookup. This only runs when the
+   probe failed on DNS: when you're logged in your lookups work, so it can't
+   trigger logins on a healthy session (the gateway redirects to the portal
+   even then).
+
+Then the login POST goes to `phc.prontonetworks.com` (resolved through the
+network's DNS), or, if that fails, to the gateway IP, Latch's fallback.
+
 ## 3. The Pronto login protocol
 
 Everything here comes from Latch's
@@ -310,8 +338,11 @@ whatever network you happen to be on. The question is **when is it safe to send?
 and harvests whatever a naive auto-login tool sends.
 
 **Gate 1: the portal fingerprint.** Credentials are sent only when the
-probe's redirect (or the page it returns) names `phc.prontonetworks.com`. A
-café portal, a hotel portal or your home router never triggers a login.
+probe's redirect (or the page it returns) names `phc.prontonetworks.com`, or,
+when DNS is blocked, when the gateway's redirect does. A café portal, a hotel
+portal or your home router never triggers a login. Asking the network's own
+DNS server doesn't weaken this: a network that can fake a redirect controls
+its own DNS answers anyway.
 
 **Gate 2: the SSID, when macOS shows it.** If the name is readable and
 doesn't contain `VIT` (or one of your `ALLOWED_SSIDS`), nothing is sent,

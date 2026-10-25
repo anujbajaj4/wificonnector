@@ -206,6 +206,64 @@ dns_failure_retries_via_gateway() {
     check "state is online" [ "$(state)" = online ]
 }
 
+custom_dns_blocked_uses_network_dns() {
+    # The Mac's own resolver (e.g. Cloudflare's 1.1.1.1 app) is blocked
+    # before login; the network's DNS server still answers.
+    with_credentials
+    behind_pronto
+    export STUB_SYSTEM_DNS_BLOCKED=1
+    wc_run run
+    check "asked the network's DNS server" grep -qF "@10.10.0.53" "$STUB_DIR/dig_calls"
+    check "probe pinned to the network's answer" grep -qF -- "--resolve clients3.google.com:80:142.250.0.1" "$STUB_DIR/curl_calls"
+    check "login pinned to the network's answer" grep -qF -- "--resolve phc.prontonetworks.com:80:10.10.0.10" "$STUB_DIR/curl_calls"
+    check "state is online" [ "$(state)" = online ]
+}
+
+all_dns_blocked_uses_gateway_fingerprint() {
+    # No lookup works at all, but the gateway redirects to the Pronto portal.
+    with_credentials
+    export STUB_SYSTEM_DNS_BLOCKED=1 STUB_DIG_FAIL=1
+    wc_run run
+    check "gateway requested" grep -qF "http://172.18.0.1/" "$STUB_DIR/curl_calls"
+    check "login went to the gateway after the portal host didn't resolve" \
+        grep -qxF "http://172.18.0.1/cgi-bin/authlogin?URI=http://example.com" "$STUB_DIR/login_urls"
+    check "state is online" [ "$(state)" = online ]
+}
+
+all_dns_blocked_foreign_gateway() {
+    with_credentials
+    export STUB_SYSTEM_DNS_BLOCKED=1 STUB_DIG_FAIL=1 STUB_GATEWAY_LOCATION="http://wifi.cafe.example/login"
+    wc_run run
+    check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+    check "state is foreign-portal" [ "$(state)" = foreign-portal ]
+}
+
+all_dns_blocked_no_gateway() {
+    with_credentials
+    export STUB_SYSTEM_DNS_BLOCKED=1 STUB_DIG_FAIL=1 STUB_GATEWAY=""
+    wc_run run
+    check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+    check "state is probe-failed" [ "$(state)" = probe-failed ]
+}
+
+online_never_asks_gateway() {
+    # Logged in, the gateway may still redirect to the portal; that must
+    # never trigger a login.
+    with_credentials
+    wc_run run
+    check "gateway not requested" not grep -qF "http://172.18.0.1/" "$STUB_DIR/curl_calls"
+    check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+}
+
+no_network_dns_resolves_normally() {
+    with_credentials
+    behind_pronto
+    export STUB_NETWORK_DNS=""
+    wc_run run
+    check "no --resolve" not grep -qF -- "--resolve" "$STUB_DIR/curl_calls"
+    check "state is online" [ "$(state)" = online ]
+}
+
 network_error_retries_once() {
     with_credentials
     behind_pronto
@@ -339,6 +397,12 @@ for t in \
     redirect_response_is_success \
     rejected_login_backs_off \
     dns_failure_retries_via_gateway \
+    custom_dns_blocked_uses_network_dns \
+    all_dns_blocked_uses_gateway_fingerprint \
+    all_dns_blocked_foreign_gateway \
+    all_dns_blocked_no_gateway \
+    online_never_asks_gateway \
+    no_network_dns_resolves_normally \
     network_error_retries_once \
     accepted_but_still_offline \
     missing_credentials \
