@@ -1,0 +1,846 @@
+#!/bin/bash
+#
+# wificonnector: logs a Mac into VIT hostel Wi-Fi (Pronto Networks captive
+# portal) automatically.
+#
+# The portal protocol is ported from VinnovateIT's Latch
+# (https://github.com/vinnovateit/latch, MIT), core/.../wifi/AutoLoginManager.kt.
+#
+# Written for the /bin/bash 3.2 that ships with macOS: no associative arrays,
+# no ${var,,}, no mapfile.
+
+set -u
+
+VERSION="0.1.0"
+
+# launchd starts jobs with a minimal PATH; make sure the system tools resolve.
+export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin"
+
+SERVICE="wificonnector"
+AGENT_LABEL="com.wificonnector.agent"
+HEALTH_CHECK_INTERVAL=15
+
+CONFIG_DIR="$HOME/.config/wificonnector"
+CONFIG_FILE="$CONFIG_DIR/config"
+STATE_DIR="$HOME/Library/Caches/wificonnector"
+LOG_FILE="$HOME/Library/Logs/wificonnector.log"
+INSTALL_PATH="$HOME/.local/bin/wificonnector"
+AGENT_PLIST="$HOME/Library/LaunchAgents/$AGENT_LABEL.plist"
+
+# Overridable so the tests don't have to wait in real time.
+REVALIDATE_DELAY="${WIFICONNECTOR_REVALIDATE_DELAY:-2}"
+IP_WAIT_DELAY="${WIFICONNECTOR_IP_WAIT_DELAY:-1}"
+
+# After the portal rejects the credentials, auto-login holds off this long so
+# a wrong password isn't retried every 15 seconds (and the account locked).
+REJECT_BACKOFF_SECONDS=300
+
+# After a login the portal accepted but the internet check still failed,
+# auto-login waits this long. Online is still noticed meanwhile; this only
+# holds back logins (e.g. when the check fails for reasons the login can't fix).
+UNVERIFIED_BACKOFF_SECONDS=120
+
+# Any HTTP URL that answers 204 with an empty body on the open internet. A
+# captive portal intercepts it, which is how we notice the portal.
+PROBE_HOST="clients3.google.com"
+PROBE_URL="http://$PROBE_HOST/generate_204"
+
+# Latch sends this exact User-Agent from every platform; the portal is known
+# to accept it, so it is kept rather than "corrected" to a Mac one.
+PORTAL_USER_AGENT="Mozilla/5.0 (Android)"
+
+# --- Portal profiles ---------------------------------------------------------
+#
+# Each portal is a profile: a fingerprint (a host that appears in the portal's
+# redirect) plus login_<profile> and logout_<profile> functions. Credentials
+# are only ever sent to a portal whose fingerprint was seen in the probe.
+
+PROFILES="pronto"
+
+pronto_fingerprint="phc.prontonetworks.com"
+PRONTO_LOGIN_PATH="/cgi-bin/authlogin?URI=http://example.com"
+PRONTO_LOGOUT_PATH="/cgi-bin/authlogout"
+
+# What the Pronto portal writes on a refused login. Matching the HTML is the
+# only signal it gives (see Latch's AutoLoginManager).
+PRONTO_ERROR_PATTERN='invalid|incorrect|wrong password|authentication failed|user not found|account expired|session limit|max session|login failed'
+
+# --- Output ------------------------------------------------------------------
+
+VERBOSE=0
+
+log() {
+    printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
+# Only shown for interactive commands; a launchd run stays quiet.
+debug() {
+    if [ "$VERBOSE" -eq 1 ]; then log "$@"; fi
+}
+
+die() {
+    printf 'wificonnector: %s\n' "$*" >&2
+    exit 1
+}
+
+notify() {
+    osascript -e "display notification \"$1\" with title \"wificonnector\"" >/dev/null 2>&1 || true
+}
+
+# Logs a message only when the state differs from the last run's, so a check
+# every 15 seconds doesn't fill the log with "still online".
+transition() {
+    local new=$1 message=$2 old=""
+    [ -f "$STATE_DIR/state" ] && old=$(cat "$STATE_DIR/state")
+    if [ "$new" != "$old" ] || [ "$VERBOSE" -eq 1 ]; then
+        log "$message"
+    fi
+    printf '%s\n' "$new" > "$STATE_DIR/state"
+}
+
+# --- Config ------------------------------------------------------------------
+
+# Reads key=value lines. The file is parsed, never sourced, so it can't run code.
+config_get() {
+    [ -f "$CONFIG_FILE" ] || return 0
+    sed -n "s/^$1=//p" "$CONFIG_FILE" | tail -n 1
+}
+
+config_set() {
+    local key=$1 value=$2 tmp
+    mkdir -p "$CONFIG_DIR" && chmod 700 "$CONFIG_DIR"
+    tmp=$(mktemp "$CONFIG_DIR/config.XXXXXX") || return 1
+    [ -f "$CONFIG_FILE" ] && grep -v "^$key=" "$CONFIG_FILE" > "$tmp"
+    printf '%s=%s\n' "$key" "$value" >> "$tmp"
+    chmod 600 "$tmp" && mv "$tmp" "$CONFIG_FILE"
+}
+
+keychain_password() {
+    security find-generic-password -s "$SERVICE" -a "$1" -w 2>/dev/null
+}
+
+lower() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+# --- Network facts -----------------------------------------------------------
+
+# The Wi-Fi device (en0 on most Macs), from the "Hardware Port: Wi-Fi" block of
+# networksetup's listing. "AirPort" is the pre-10.7 name of the same port.
+wifi_device() {
+    local configured
+    configured=$(config_get WIFI_DEVICE)
+    if [ -n "$configured" ]; then
+        printf '%s' "$configured"
+        return 0
+    fi
+    networksetup -listallhardwareports 2>/dev/null | awk '
+        /^$/ { port = "" }
+        /^Hardware Port:/ { port = tolower(substr($0, index($0, ":") + 2)) }
+        /^Device:/ && (port == "wi-fi" || port == "airport") { print $2; found = 1; exit }
+        END { exit !found }'
+}
+
+# The device's IPv4 address. Right after a network change DHCP may still be
+# running, so this waits a few seconds before giving up.
+wait_for_ip() {
+    local ip attempt=0
+    while [ "$attempt" -lt 5 ]; do
+        ip=$(ipconfig getifaddr "$1" 2>/dev/null)
+        if [ -n "$ip" ]; then
+            printf '%s' "$ip"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        [ "$attempt" -lt 5 ] && sleep "$IP_WAIT_DELAY"
+    done
+    return 1
+}
+
+gateway_ip() {
+    ipconfig getoption "$1" router 2>/dev/null
+}
+
+# The DNS server the Wi-Fi network hands out (DHCP). Set once per run by
+# use_network_dns; empty when the network gives none.
+NETWORK_DNS=""
+
+use_network_dns() {
+    NETWORK_DNS=$(ipconfig getoption "$1" domain_name_server 2>/dev/null)
+}
+
+# A captive portal blocks outside DNS servers (1.1.1.1, 8.8.8.8, a VPN's...)
+# until you log in, but answers lookups through its own. So the portal's
+# requests resolve their host through the network's DNS server and hand curl
+# the answer: prints "host:80:address" for curl --resolve, or nothing, in
+# which case curl resolves the name the normal way.
+pin_host() {
+    local host=$1 address
+    [ -n "$NETWORK_DNS" ] || return 0
+    case $host in
+        *[!0-9.]*) ;;
+        *) return 0 ;;  # already an IP address
+    esac
+    address=$(dig +short +time=2 +tries=1 "@$NETWORK_DNS" "$host" A 2>/dev/null |
+        grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+    [ -n "$address" ] && printf '%s:80:%s' "$host" "$address"
+    return 0
+}
+
+# The Wi-Fi network's name, or nothing when macOS won't say. Since macOS 14
+# the SSID is location data and command-line tools usually see "<redacted>";
+# that is treated as unknown, never as "not VIT".
+read_ssid() {
+    local ssid
+    ssid=$(ipconfig getsummary "$1" 2>/dev/null | awk '/^ *SSID : / { sub(/^ *SSID : /, ""); print; exit }')
+    case $ssid in
+        '<redacted>') ssid="" ;;
+    esac
+    if [ -z "$ssid" ]; then
+        ssid=$(networksetup -getairportnetwork "$1" 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p')
+    fi
+    printf '%s' "$ssid"
+}
+
+# True when the SSID names a VIT network (as in Latch: contains "VIT"), or one
+# listed in the config's ALLOWED_SSIDS (comma-separated).
+is_campus_ssid() {
+    local ssid allowed entry
+    ssid=$(lower "$1")
+    case $ssid in
+        *vit*) return 0 ;;
+    esac
+    allowed=$(config_get ALLOWED_SSIDS)
+    local IFS=','
+    for entry in $allowed; do
+        entry=$(lower "$entry" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        [ -n "$entry" ] || continue
+        case $ssid in
+            *"$entry"*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# --- Probe -------------------------------------------------------------------
+
+# Requests PROBE_URL without following redirects. Sets
+# PROBE_RESULT to online, portal, dns or error; the portal's response is left
+# in $TMP/probe.headers and $TMP/probe.body for the fingerprint check.
+probe() {
+    local code rc pin
+    : > "$TMP/probe.headers"
+    : > "$TMP/probe.body"
+    pin=$(pin_host "$PROBE_HOST")
+    code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
+        --connect-timeout 3 --max-time 3 ${pin:+--resolve "$pin"} \
+        "$PROBE_URL" 2>"$TMP/probe.err")
+    rc=$?
+    PROBE_DETAIL=""
+    if [ "$rc" -eq 6 ]; then
+        PROBE_RESULT="dns"
+        PROBE_DETAIL="DNS lookup failed"
+    elif [ "$rc" -ne 0 ]; then
+        PROBE_RESULT="error"
+        PROBE_DETAIL="curl exit $rc: $(tail -n 1 "$TMP/probe.err")"
+    elif [ "$code" = "204" ]; then
+        PROBE_RESULT="online"
+    else
+        PROBE_RESULT="portal"
+        PROBE_DETAIL="HTTP $code"
+    fi
+}
+
+# Before login the probe can fail outright instead of being redirected: every
+# lookup blocked (a custom DNS like 1.1.1.1), or the connection dropped on the
+# Mac itself (a VPN such as Cloudflare WARP, whose tunnel can't come up until
+# the portal lets it through). The gateway is on the local network, so it
+# still answers by address, and VIT's gateway redirects to the Pronto portal:
+# the same fingerprint, with no DNS or tunnel involved. Leaves its response
+# where detect_profile looks; fails if the gateway doesn't answer.
+probe_gateway() {
+    local gateway=$1 code
+    [ -n "$gateway" ] || return 1
+    : > "$TMP/probe.headers"
+    : > "$TMP/probe.body"
+    code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
+        --connect-timeout 3 --max-time 3 \
+        "http://$gateway/" 2>/dev/null) || return 1
+    PROBE_DETAIL="internet check failed ($PROBE_DETAIL); gateway answered HTTP $code"
+}
+
+# Prints the profile whose fingerprint appears in the probe's redirect or page.
+detect_profile() {
+    local profile var fingerprint
+    for profile in $PROFILES; do
+        var="${profile}_fingerprint"
+        fingerprint=${!var}
+        if grep -qiF "$fingerprint" "$TMP/probe.headers" "$TMP/probe.body" 2>/dev/null; then
+            printf '%s' "$profile"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# After a login the portal can take a moment to open up, and a VPN tunnel a
+# few more seconds to reconnect through it: probe now, then up to five more
+# times two seconds apart (Latch allows three).
+revalidate() {
+    local attempt=0
+    while :; do
+        probe
+        [ "$PROBE_RESULT" = "online" ] && return 0
+        [ "$attempt" -ge 5 ] && return 1
+        attempt=$((attempt + 1))
+        debug "Waiting for the internet to come up (attempt $attempt/5)"
+        sleep "$REVALIDATE_DELAY"
+    done
+}
+
+# --- Pronto profile ----------------------------------------------------------
+
+# One login POST to http://<host>/cgi-bin/authlogin. The password goes to curl
+# on stdin (password@-), so it never appears in the process list. Sets
+# HTTP_CODE and returns curl's exit status.
+pronto_post() {
+    local host=$1 user=$2 password=$3 pin
+    : > "$TMP/login.body"
+    pin=$(pin_host "$host")
+    HTTP_CODE=$(printf '%s' "$password" | curl -sS -o "$TMP/login.body" -w '%{http_code}' \
+        --connect-timeout 5 --max-time 10 ${pin:+--resolve "$pin"} \
+        -A "$PORTAL_USER_AGENT" \
+        -H 'Content-Type: application/x-www-form-urlencoded' \
+        --data-urlencode "userId=$user" \
+        --data-urlencode "password@-" \
+        --data-urlencode "serviceName=ProntoAuthentication" \
+        "http://$host$PRONTO_LOGIN_PATH" 2>"$TMP/login.err")
+}
+
+# Returns 0 when the portal accepted the login, 2 when it refused the
+# credentials, 1 for anything else (network error, unexpected response).
+login_pronto() {
+    local user=$1 password=$2 gateway=$3 rc
+    pronto_post "$pronto_fingerprint" "$user" "$password"
+    rc=$?
+    if { [ "$rc" -eq 6 ] || [ "$rc" -eq 7 ]; } && [ -n "$gateway" ]; then
+        # The portal host didn't resolve (6), or the Mac has no route to it
+        # before login (7: e.g. no default route, or a VPN blocking all but the
+        # local network). Latch's fallback: the gateway, which is always local.
+        log "Portal host unreachable (curl exit $rc); retrying via the gateway"
+        pronto_post "$gateway" "$user" "$password"
+        rc=$?
+    elif [ "$rc" -ne 0 ]; then
+        debug "Login request failed (curl exit $rc); retrying once"
+        sleep 1
+        pronto_post "$pronto_fingerprint" "$user" "$password"
+        rc=$?
+    fi
+    if [ "$rc" -ne 0 ]; then
+        log "Login request failed (curl exit $rc): $(tail -n 1 "$TMP/login.err")"
+        return 1
+    fi
+
+    case $HTTP_CODE in
+        301|302)
+            debug "Portal answered with a redirect (HTTP $HTTP_CODE); login accepted"
+            return 0
+            ;;
+        200)
+            if tr '[:upper:]' '[:lower:]' < "$TMP/login.body" | grep -qE "$PRONTO_ERROR_PATTERN"; then
+                log "Portal refused the login: $(head -c 300 "$TMP/login.body" | tr '\r\n' '  ')"
+                return 2
+            fi
+            debug "Portal answered HTTP 200 with no error message; login accepted"
+            return 0
+            ;;
+        *)
+            log "Portal answered with unexpected HTTP $HTTP_CODE"
+            return 1
+            ;;
+    esac
+}
+
+logout_pronto() {
+    local gateway=$1 code rc pin
+    pin=$(pin_host "$pronto_fingerprint")
+    code=$(curl -sS -o /dev/null -w '%{http_code}' \
+        --connect-timeout 3 --max-time 5 ${pin:+--resolve "$pin"} \
+        "http://$pronto_fingerprint$PRONTO_LOGOUT_PATH" 2>"$TMP/logout.err")
+    rc=$?
+    if [ "$rc" -eq 6 ] && [ -n "$gateway" ]; then
+        code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            --connect-timeout 3 --max-time 5 \
+            "http://$gateway$PRONTO_LOGOUT_PATH" 2>"$TMP/logout.err")
+        rc=$?
+    fi
+    [ "$rc" -eq 0 ] && [ "$code" -ge 200 ] && [ "$code" -lt 400 ]
+}
+
+# --- The check ---------------------------------------------------------------
+
+# True if the state file $1 holds a timestamp less than $2 seconds old.
+recently() {
+    local since now
+    [ -f "$STATE_DIR/$1" ] || return 1
+    since=$(cat "$STATE_DIR/$1")
+    now=$(date +%s)
+    [ $((now - since)) -lt "$2" ]
+}
+
+# One pass: is there a VIT portal in the way, and if so, log in.
+# $1 is "auto" (launchd; honours pause and backoff) or "manual".
+check_and_login() {
+    local mode=$1 device ip gateway profile ssid user password rc
+
+    if [ "$mode" = "auto" ] && [ -f "$STATE_DIR/paused" ]; then
+        transition paused "Auto-login is paused (run 'wificonnector login' to resume)"
+        return 0
+    fi
+
+    if ! device=$(wifi_device); then
+        transition no-wifi "No Wi-Fi interface found"
+        return 1
+    fi
+    if ! ip=$(wait_for_ip "$device"); then
+        transition disconnected "Wi-Fi ($device) is not connected"
+        return 1
+    fi
+
+    use_network_dns "$device"
+    probe
+    case $PROBE_RESULT in
+        online)
+            transition online "Online ($device, $ip)"
+            return 0
+            ;;
+        dns|error)
+            # VIT's gateway redirects to the portal even after login, so this
+            # path can't tell logged in from logged out; a login that doesn't
+            # bring the internet back is therefore followed by a pause
+            # (UNVERIFIED_BACKOFF_SECONDS) instead of a retry every run.
+            if ! probe_gateway "$(gateway_ip "$device")"; then
+                transition probe-failed "Couldn't check for a captive portal: $PROBE_DETAIL, and the gateway didn't answer"
+                return 1
+            fi
+            ;;
+    esac
+
+    # The probe was intercepted. Only a portal we recognise gets credentials.
+    if ! profile=$(detect_profile); then
+        transition foreign-portal "Captive portal ($PROBE_DETAIL) is not a VIT portal; not sending credentials"
+        return 1
+    fi
+
+    ssid=$(read_ssid "$device")
+    if [ -n "$ssid" ] && ! is_campus_ssid "$ssid"; then
+        transition not-vit "Network '$ssid' is not a VIT network; not sending credentials"
+        return 1
+    fi
+
+    if [ "$mode" = "auto" ]; then
+        if recently rejected "$REJECT_BACKOFF_SECONDS"; then
+            transition backoff "Portal refused the last login; waiting before trying again (or run 'wificonnector login')"
+            return 1
+        fi
+        if recently unverified "$UNVERIFIED_BACKOFF_SECONDS"; then
+            transition backoff-unverified "Last login didn't bring the internet back; waiting before trying again (or run 'wificonnector login')"
+            return 1
+        fi
+    fi
+
+    user=$(config_get USERNAME)
+    if [ -z "$user" ] || ! password=$(keychain_password "$user") || [ -z "$password" ]; then
+        transition no-credentials "No saved credentials; run 'wificonnector setup'"
+        notify "No saved credentials. Run 'wificonnector setup' in Terminal."
+        return 1
+    fi
+
+    gateway=$(gateway_ip "$device")
+    log "VIT portal ($profile) detected on '${ssid:-name hidden by macOS}'; logging in as $user"
+    "login_$profile" "$user" "$password" "$gateway"
+    rc=$?
+    password=""
+
+    case $rc in
+        0)
+            rm -f "$STATE_DIR/rejected"
+            if revalidate; then
+                rm -f "$STATE_DIR/unverified"
+                transition online "Logged in; internet is up"
+                notify "Logged in to VIT Wi-Fi"
+                return 0
+            fi
+            date +%s > "$STATE_DIR/unverified"
+            transition no-internet "Portal accepted the login but the internet check still fails ($PROBE_DETAIL)"
+            return 1
+            ;;
+        2)
+            date +%s > "$STATE_DIR/rejected"
+            transition rejected "Login refused; check your credentials with 'wificonnector setup'"
+            notify "VIT Wi-Fi refused the login. Check your credentials."
+            return 1
+            ;;
+        *)
+            transition login-failed "Login attempt failed"
+            return 1
+            ;;
+    esac
+}
+
+# --- Commands ----------------------------------------------------------------
+
+setup_runtime() {
+    mkdir -p "$STATE_DIR" || die "can't create $STATE_DIR"
+    TMP=$(mktemp -d "${TMPDIR:-/tmp}/wificonnector.XXXXXX") || die "can't create a temp dir"
+    trap 'rm -rf "$TMP"' EXIT
+}
+
+# Keeps two runs (a network change and the 15-second timer) from logging in at
+# once. mkdir is atomic; a lock older than two minutes is a crashed run's.
+acquire_lock() {
+    local lock="$STATE_DIR/lock"
+    if [ -d "$lock" ] && [ -n "$(find "$lock" -maxdepth 0 -mmin +2 2>/dev/null)" ]; then
+        rmdir "$lock" 2>/dev/null
+    fi
+    mkdir "$lock" 2>/dev/null || return 1
+    trap 'rm -rf "$TMP"; rmdir "$STATE_DIR/lock" 2>/dev/null' EXIT
+}
+
+# Keeps the launchd log from growing forever.
+trim_log() {
+    local size
+    [ -f "$LOG_FILE" ] || return 0
+    size=$(wc -c < "$LOG_FILE" | tr -d ' ')
+    if [ "$size" -gt 1048576 ]; then
+        tail -n 2000 "$LOG_FILE" > "$TMP/log" && cat "$TMP/log" > "$LOG_FILE"
+    fi
+}
+
+cmd_run() {
+    setup_runtime
+    acquire_lock || exit 0
+    trim_log
+    # Always exit 0: the outcome is in the log, and launchd needn't see failures.
+    check_and_login auto || true
+}
+
+cmd_login() {
+    VERBOSE=1
+    setup_runtime
+    acquire_lock || die "another wificonnector run is in progress; try again in a few seconds"
+    rm -f "$STATE_DIR/paused" "$STATE_DIR/rejected" "$STATE_DIR/unverified"
+    check_and_login manual
+}
+
+cmd_logout() {
+    local device gateway
+    setup_runtime
+    device=$(wifi_device) || die "no Wi-Fi interface found"
+    gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
+    if [ "${1:-}" != "--no-pause" ]; then
+        # Without this the agent would log straight back in within 15 seconds.
+        : > "$STATE_DIR/paused"
+        echo "Auto-login paused until you run 'wificonnector login'."
+    fi
+    if logout_pronto "$gateway"; then
+        echo "Logged out of VIT Wi-Fi."
+    else
+        die "logout request failed (are you on VIT Wi-Fi?)"
+    fi
+}
+
+cmd_setup() {
+    local user old_user
+    printf 'VIT registration number (e.g. 22BCE1234): '
+    read -r user || die "no input"
+    user=$(printf '%s' "$user" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
+    [ -n "$user" ] || die "registration number can't be empty"
+    if ! printf '%s' "$user" | grep -qE '^[0-9]{2}[A-Z]{3}[0-9]{4}$'; then
+        echo "Note: '$user' doesn't look like a registration number (YYAAA0000); saving it anyway."
+    fi
+
+    old_user=$(config_get USERNAME)
+    echo "macOS will now ask for your Wi-Fi password twice. It goes straight into"
+    echo "your login Keychain; wificonnector never sees it here."
+    # -w as the last argument makes security prompt for the password itself.
+    # -T pre-authorizes /usr/bin/security, so background runs read it without a dialog.
+    security add-generic-password -U -s "$SERVICE" -a "$user" \
+        -l "wificonnector (VIT Wi-Fi)" -T /usr/bin/security -w \
+        || die "couldn't save the password to the Keychain"
+    if [ -n "$old_user" ] && [ "$old_user" != "$user" ]; then
+        security delete-generic-password -s "$SERVICE" -a "$old_user" >/dev/null 2>&1
+    fi
+    config_set USERNAME "$user" || die "couldn't write $CONFIG_FILE"
+    mkdir -p "$STATE_DIR" && rm -f "$STATE_DIR/rejected"
+    # $0 is how this was invoked (e.g. bin/wificonnector), which works before install.
+    echo "Saved. Run '$0 login' to test it, then '$0 install'."
+}
+
+cmd_status() {
+    local device ip ssid gateway user agent profile
+    setup_runtime
+    echo "wificonnector $VERSION"
+    if ! device=$(wifi_device); then
+        echo "Wi-Fi:        no interface found"
+        return 1
+    fi
+    ip=$(ipconfig getifaddr "$device" 2>/dev/null)
+    ssid=$(read_ssid "$device")
+    gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
+    echo "Wi-Fi:        $device, ${ip:-not connected}"
+    echo "Network:      ${ssid:-(name hidden by macOS)}"
+    echo "Gateway:      ${gateway:--}"
+    echo "Network DNS:  ${NETWORK_DNS:-none offered}"
+    if [ -n "$ip" ]; then
+        probe
+        if { [ "$PROBE_RESULT" = "dns" ] || [ "$PROBE_RESULT" = "error" ]; } && probe_gateway "$gateway"; then
+            PROBE_RESULT="portal"
+        fi
+        case $PROBE_RESULT in
+            online) echo "Internet:     online" ;;
+            portal)
+                if profile=$(detect_profile); then
+                    echo "Internet:     behind the VIT portal ($profile, $PROBE_DETAIL)"
+                else
+                    echo "Internet:     behind an unknown captive portal ($PROBE_DETAIL)"
+                fi
+                ;;
+            *) echo "Internet:     unknown ($PROBE_DETAIL)" ;;
+        esac
+    fi
+    user=$(config_get USERNAME)
+    if [ -n "$user" ] && keychain_password "$user" >/dev/null; then
+        echo "Credentials:  $user (in Keychain)"
+    else
+        echo "Credentials:  not set (run 'wificonnector setup')"
+    fi
+    if launchctl print "gui/$(id -u)/$AGENT_LABEL" >/dev/null 2>&1; then
+        agent="running every ${HEALTH_CHECK_INTERVAL}s and on network changes"
+    else
+        agent="not installed (run 'wificonnector install')"
+    fi
+    echo "Agent:        $agent"
+    [ -f "$STATE_DIR/paused" ] && echo "Auto-login:   paused (run 'wificonnector login' to resume)"
+    [ -f "$STATE_DIR/state" ] && echo "Last state:   $(cat "$STATE_DIR/state")"
+    return 0
+}
+
+# --- diagnose: what the script sees, safe to share ---------------------------
+
+# An address's kind instead of the address itself.
+addr_kind() {
+    case $1 in
+        '') echo "none" ;;
+        127.*) echo "loopback (a local DNS proxy, e.g. a VPN or DNS app)" ;;
+        10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) echo "private" ;;
+        100.6[4-9].*|100.[7-9][0-9].*|100.1[01][0-9].*|100.12[0-7].*) echo "shared/CGNAT (often a VPN)" ;;
+        169.254.*) echo "link-local" ;;
+        *:*) echo "IPv6" ;;
+        1.1.1.1|1.0.0.1) echo "public (Cloudflare DNS)" ;;
+        8.8.8.8|8.8.4.4) echo "public (Google DNS)" ;;
+        *) echo "public" ;;
+    esac
+}
+
+route_interface() {
+    local interface
+    interface=$(route -n get "$1" 2>/dev/null | awk '/interface:/ { print $2; exit }')
+    printf '%s' "${interface:-no route}"
+}
+
+# One request, summarised; a redirect to a bare address shows only its kind.
+try_url() {
+    local out rc code host
+    out=$(curl -s -o /dev/null --connect-timeout 3 --max-time 5 \
+        -w '%{http_code} %{redirect_url}' "$@" 2>/dev/null)
+    rc=$?
+    code=${out%% *}
+    host=${out#"$code"}
+    host=$(printf '%s' "${host# }" | sed -E 's#^[a-zA-Z]+://([^/:]+).*#\1#')
+    case $host in
+        '') host="-" ;;
+        *[!0-9.]*) ;;
+        *) host="($(addr_kind "$host") address)" ;;
+    esac
+    printf 'curl-exit=%s http=%s redirect-to=%s' "$rc" "$code" "$host"
+}
+
+diagnose_host() {
+    local host=$1 path=$2 pin address
+    pin=$(pin_host "$host")
+    address=${pin##*:}
+    echo "$host"
+    if [ -n "$address" ]; then
+        echo "  network DNS says: $(addr_kind "$address"), routed via $(route_interface "$address")"
+    else
+        echo "  network DNS says: no answer"
+    fi
+    echo "  via the Mac's DNS:   $(try_url "http://$host$path")"
+    [ -n "$pin" ] && echo "  via network DNS:     $(try_url --resolve "$pin" "http://$host$path")"
+}
+
+cmd_diagnose() {
+    local device ip gateway kinds
+    setup_runtime
+    echo "wificonnector $VERSION diagnose (addresses are shown only as their kind)"
+    echo "macOS:          $(sw_vers -productVersion 2>/dev/null)"
+    if ! device=$(wifi_device); then
+        echo "Wi-Fi:          no interface found"
+        return 1
+    fi
+    ip=$(ipconfig getifaddr "$device" 2>/dev/null)
+    gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
+    if [ -n "$ip" ]; then
+        echo "Wi-Fi:          $device, connected, $(addr_kind "$ip") address"
+    else
+        echo "Wi-Fi:          $device, not connected"
+    fi
+    echo "Gateway:        $(addr_kind "$gateway")"
+    echo "Network DNS:    $(addr_kind "$NETWORK_DNS")"
+    kinds=$(for ns in $(scutil --dns 2>/dev/null | awk '/nameserver\[/ { print $3 }'); do
+        addr_kind "$ns"
+    done | sort -u | paste -s -d ';' -)
+    echo "Mac's DNS:      ${kinds:-none}"
+    echo "Default route:  $(route_interface default) (utun* = a VPN tunnel)"
+    if command -v warp-cli >/dev/null 2>&1; then
+        echo "Cloudflare:     $(warp-cli status 2>/dev/null | tr '\n' ' ')"
+    fi
+    diagnose_host "$PROBE_HOST" /generate_204
+    diagnose_host "$pronto_fingerprint" "$PRONTO_LOGIN_PATH"
+    if [ -n "$gateway" ]; then
+        echo "gateway:             $(try_url "http://$gateway/")"
+        echo "gateway login page:  $(try_url "http://$gateway$PRONTO_LOGIN_PATH")"
+    fi
+    echo "raw IP, no DNS:      $(try_url http://1.1.1.1/)"
+    echo "SSID readable:  $([ -n "$(read_ssid "$device")" ] && echo yes || echo "no (hidden by macOS)")"
+}
+
+xml_escape() {
+    printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+# The launchd job. WatchPaths starts a run whenever macOS rewrites its network
+# configuration or DNS settings (which happens on every join, roam and wake);
+# StartInterval is the health check that catches a session the portal ended
+# while the Wi-Fi stayed connected.
+agent_plist() {
+    local script log
+    script=$(xml_escape "$INSTALL_PATH")
+    log=$(xml_escape "$LOG_FILE")
+    cat <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$AGENT_LABEL</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$script</string>
+        <string>run</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>$HEALTH_CHECK_INTERVAL</integer>
+    <key>WatchPaths</key>
+    <array>
+        <string>/Library/Preferences/SystemConfiguration</string>
+        <string>/private/var/run/resolv.conf</string>
+    </array>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>$log</string>
+    <key>StandardErrorPath</key>
+    <string>$log</string>
+</dict>
+</plist>
+EOF
+}
+
+cmd_install() {
+    local source domain
+    source="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+    domain="gui/$(id -u)"
+
+    mkdir -p "$(dirname "$INSTALL_PATH")" "$(dirname "$AGENT_PLIST")" "$(dirname "$LOG_FILE")" \
+        || die "can't create install directories"
+    if [ "$source" != "$INSTALL_PATH" ]; then
+        cp "$source" "$INSTALL_PATH" || die "can't copy to $INSTALL_PATH"
+    fi
+    chmod 755 "$INSTALL_PATH"
+    agent_plist > "$AGENT_PLIST" || die "can't write $AGENT_PLIST"
+
+    launchctl bootout "$domain/$AGENT_LABEL" >/dev/null 2>&1
+    launchctl bootstrap "$domain" "$AGENT_PLIST" || die "launchctl couldn't load $AGENT_PLIST"
+    launchctl enable "$domain/$AGENT_LABEL" >/dev/null 2>&1
+
+    echo "Installed $INSTALL_PATH and started $AGENT_LABEL."
+    echo "It checks every ${HEALTH_CHECK_INTERVAL}s and on every network change. Log: $LOG_FILE"
+    if [ -z "$(config_get USERNAME)" ]; then
+        echo "No credentials yet: run 'wificonnector setup'."
+    fi
+    case ":$PATH:" in
+        *":$(dirname "$INSTALL_PATH"):"*) ;;
+        *) echo "Tip: add $(dirname "$INSTALL_PATH") to your PATH to run 'wificonnector' from anywhere." ;;
+    esac
+}
+
+cmd_uninstall() {
+    local user
+    launchctl bootout "gui/$(id -u)/$AGENT_LABEL" >/dev/null 2>&1
+    rm -f "$AGENT_PLIST" "$INSTALL_PATH"
+    rm -rf "$STATE_DIR"
+    echo "Stopped and removed the launchd agent."
+    if [ "${1:-}" = "--purge" ]; then
+        user=$(config_get USERNAME)
+        [ -n "$user" ] && security delete-generic-password -s "$SERVICE" -a "$user" >/dev/null 2>&1
+        rm -rf "$CONFIG_DIR"
+        echo "Removed your saved credentials."
+    else
+        echo "Your credentials are still saved; 'wificonnector uninstall --purge' removes them too."
+    fi
+}
+
+usage() {
+    cat <<EOF
+wificonnector $VERSION: automatic login for VIT hostel Wi-Fi on macOS
+
+Usage: wificonnector <command>
+
+  setup          Save your registration number and password (Keychain)
+  login          Log in now and resume auto-login, showing every step
+  logout         Log out and pause auto-login (--no-pause keeps it running)
+  status         Show the Wi-Fi, portal, credential and agent state
+  diagnose       Network details for troubleshooting, without any addresses
+  install        Install the background agent (runs at login)
+  uninstall      Remove the agent (--purge also deletes your credentials)
+  run            One quiet check-and-login pass (what the agent runs)
+EOF
+}
+
+main() {
+    local command=${1:-}
+    [ $# -gt 0 ] && shift
+    case $command in
+        run) cmd_run ;;
+        login) cmd_login ;;
+        logout) cmd_logout "$@" ;;
+        setup) cmd_setup ;;
+        status) cmd_status ;;
+        diagnose) cmd_diagnose ;;
+        install) cmd_install ;;
+        uninstall) cmd_uninstall "$@" ;;
+        version|--version|-v) echo "wificonnector $VERSION" ;;
+        ''|help|--help|-h) usage ;;
+        *) usage >&2; exit 2 ;;
+    esac
+}
+
+main "$@"

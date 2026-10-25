@@ -1,0 +1,8 @@
+#!/bin/bash
+# Fake route -n get: STUB_VPN=1 sends everything but local addresses into a tunnel.
+target=${3:-}
+case $target in
+    10.*|172.1[6-9].*|192.168.*) iface=en0 ;;
+    *) if [ "${STUB_VPN:-0}" = 1 ]; then iface=utun4; else iface=en0; fi ;;
+esac
+printf '   route to: %s\ninterface: %s\n' "$target" "$iface"

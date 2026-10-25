@@ -1,0 +1,19 @@
+#!/bin/bash
+# Fake networksetup: an Ethernet port listed before the Wi-Fi one, as on real Macs.
+case $1 in
+    -listallhardwareports)
+        if [ "${STUB_NO_WIFI:-0}" = 1 ]; then
+            printf '\nHardware Port: Ethernet\nDevice: en0\nEthernet Address: aa\n\n'
+        else
+            printf '\nHardware Port: Thunderbolt Ethernet\nDevice: en5\nEthernet Address: aa\n\n'
+            printf 'Hardware Port: Wi-Fi\nDevice: en0\nEthernet Address: bb\n\n'
+        fi
+        ;;
+    -getairportnetwork)
+        if [ -n "${STUB_NETWORKSETUP_SSID-}" ]; then
+            echo "Current Wi-Fi Network: $STUB_NETWORKSETUP_SSID"
+        else
+            echo "You are not associated with an AirPort network."
+        fi
+        ;;
+esac
