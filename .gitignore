@@ -1,0 +1,7 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# app/build-app.sh output
+app/build/

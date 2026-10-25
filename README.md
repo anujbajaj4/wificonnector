@@ -58,6 +58,7 @@ wificonnector logout         Log out and pause auto-login
 wificonnector logout --no-pause   Log out but keep auto-login running
 wificonnector status         Wi-Fi, portal, credentials and agent state
 wificonnector diagnose       Network details for troubleshooting, safe to share (no addresses)
+wificonnector pause | resume Hold or restart auto-login without logging out
 wificonnector install        Install or update the background agent
 wificonnector uninstall      Remove the agent (--purge also deletes credentials)
 ```
@@ -118,10 +119,17 @@ The tests replace `curl`, `security`, `ipconfig`, `networksetup`,
 `osascript` and `launchctl` with fakes, so they never touch your Keychain or
 network.
 
+## Menu-bar app
+
+Prefer an icon in the menu bar to Terminal? [`app/`](app/README.md) has a
+SwiftUI menu-bar app that shows whether you're online and lets you log in or
+out, pause auto-login and enter your credentials. Open
+`app/WiFiConnector.xcodeproj` in Xcode and press Run.
+
 ## Roadmap
 
 - Academic-block Wi-Fi (a different portal; its protocol needs capturing first)
-- A native Swift menu-bar app
+- Move the menu-bar app's engine from the script into Swift, step by step
 
 ## License
 

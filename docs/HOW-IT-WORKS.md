@@ -462,7 +462,9 @@ real portal behaves. Those get checked once, on a real Mac at VIT
      responses look like.
   3. Write `login_academic` from that, add its fingerprint to `PROFILES`, and
      add stub tests.
-- **A Swift menu-bar app** (phase 2) using the same logic natively: CoreWLAN
-  for the SSID (after asking for Location permission, which an app can do),
-  the Keychain API, `URLSession`, network-change callbacks from
-  `NWPathMonitor`, and `SMAppService` to start at login.
+- **A Swift menu-bar app** (phase 2). The first version in [`app/`](../app/README.md)
+  is a SwiftUI front end that runs this script as its engine (`info`, `login`,
+  `set-credentials`...). Then the engine moves into Swift step by step:
+  CoreWLAN for the SSID (after asking for Location permission, which an app
+  can do), network-change callbacks from `NWPathMonitor`, `URLSession` for the
+  login, and the app itself replacing the launchd agent.
