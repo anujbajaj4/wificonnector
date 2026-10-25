@@ -280,7 +280,40 @@ accepted_but_still_offline() {
     export STUB_ONLINE_AFTER_LOGIN=0
     wc_run run
     check "state is no-internet" [ "$(state)" = no-internet ]
-    check "probe + 4 revalidation probes" [ "$(grep -c generate_204 "$STUB_DIR/curl_calls")" = 5 ]
+    check "probe + 6 revalidation probes" [ "$(grep -c generate_204 "$STUB_DIR/curl_calls")" = 7 ]
+    wc_run run
+    check "no second login while paused after an unverified one" [ "$(count "$STUB_DIR/login_urls")" = 1 ]
+    check "state is backoff-unverified" [ "$(state)" = backoff-unverified ]
+    wc_run login
+    check "manual login ignores that pause" [ "$(count "$STUB_DIR/login_urls")" = 2 ]
+}
+
+vpn_refused_uses_gateway_fingerprint() {
+    # A VPN (e.g. Cloudflare WARP) drops the probe on the Mac before login;
+    # the gateway on the local network still redirects to the portal.
+    with_credentials
+    export STUB_PROBE_RC=7
+    wc_run run
+    check "gateway requested" grep -qF "http://172.18.0.1/" "$STUB_DIR/curl_calls"
+    check "logged in" [ "$(count "$STUB_DIR/login_urls")" = 1 ]
+    check "state is online" [ "$(state)" = online ]
+}
+
+vpn_refused_foreign_gateway() {
+    with_credentials
+    export STUB_PROBE_RC=7 STUB_GATEWAY_LOCATION="http://wifi.cafe.example/login"
+    wc_run run
+    check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+    check "state is foreign-portal" [ "$(state)" = foreign-portal ]
+}
+
+diagnose_shows_no_addresses() {
+    export STUB_VPN=1
+    wc_run diagnose
+    check "names the Cloudflare app's resolvers" grep -q "Mac's DNS:      loopback" "$SANDBOX/out"
+    check "spots the VPN default route" grep -q "Default route:  via utun4" "$SANDBOX/out"
+    check "reports the gateway's redirect" grep -q "^gateway: .*redirect-to=phc.prontonetworks.com" "$SANDBOX/out"
+    check "prints no IPv4 address" not grep -qE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' "$SANDBOX/out"
 }
 
 missing_credentials() {
@@ -403,6 +436,9 @@ for t in \
     all_dns_blocked_no_gateway \
     online_never_asks_gateway \
     no_network_dns_resolves_normally \
+    vpn_refused_uses_gateway_fingerprint \
+    vpn_refused_foreign_gateway \
+    diagnose_shows_no_addresses \
     network_error_retries_once \
     accepted_but_still_offline \
     missing_credentials \

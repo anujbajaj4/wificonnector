@@ -35,6 +35,11 @@ IP_WAIT_DELAY="${WIFICONNECTOR_IP_WAIT_DELAY:-1}"
 # a wrong password isn't retried every 15 seconds (and the account locked).
 REJECT_BACKOFF_SECONDS=300
 
+# After a login the portal accepted but the internet check still failed,
+# auto-login waits this long. Online is still noticed meanwhile; this only
+# holds back logins (e.g. when the check fails for reasons the login can't fix).
+UNVERIFIED_BACKOFF_SECONDS=120
+
 # Any HTTP URL that answers 204 with an empty body on the open internet. A
 # captive portal intercepts it, which is how we notice the portal.
 PROBE_HOST="clients3.google.com"
@@ -246,10 +251,13 @@ probe() {
     fi
 }
 
-# When no lookup works at all, the probe can't even start. The gateway still
-# answers HTTP by address, and VIT's gateway redirects to the Pronto portal:
-# a fingerprint that needs no DNS. Leaves its response where detect_profile
-# looks; fails if the gateway doesn't answer.
+# Before login the probe can fail outright instead of being redirected: every
+# lookup blocked (a custom DNS like 1.1.1.1), or the connection dropped on the
+# Mac itself (a VPN such as Cloudflare WARP, whose tunnel can't come up until
+# the portal lets it through). The gateway is on the local network, so it
+# still answers by address, and VIT's gateway redirects to the Pronto portal:
+# the same fingerprint, with no DNS or tunnel involved. Leaves its response
+# where detect_profile looks; fails if the gateway doesn't answer.
 probe_gateway() {
     local gateway=$1 code
     [ -n "$gateway" ] || return 1
@@ -258,7 +266,7 @@ probe_gateway() {
     code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
         --connect-timeout 3 --max-time 3 \
         "http://$gateway/" 2>/dev/null) || return 1
-    PROBE_DETAIL="DNS blocked; gateway answered HTTP $code"
+    PROBE_DETAIL="internet check failed ($PROBE_DETAIL); gateway answered HTTP $code"
 }
 
 # Prints the profile whose fingerprint appears in the probe's redirect or page.
@@ -275,16 +283,17 @@ detect_profile() {
     return 1
 }
 
-# After a login the portal can take a moment to open up: probe now, then up to
-# three more times two seconds apart (Latch's revalidation).
+# After a login the portal can take a moment to open up, and a VPN tunnel a
+# few more seconds to reconnect through it: probe now, then up to five more
+# times two seconds apart (Latch allows three).
 revalidate() {
     local attempt=0
     while :; do
         probe
         [ "$PROBE_RESULT" = "online" ] && return 0
-        [ "$attempt" -ge 3 ] && return 1
+        [ "$attempt" -ge 5 ] && return 1
         attempt=$((attempt + 1))
-        debug "Waiting for the portal to open (attempt $attempt/3)"
+        debug "Waiting for the internet to come up (attempt $attempt/5)"
         sleep "$REVALIDATE_DELAY"
     done
 }
@@ -368,12 +377,13 @@ logout_pronto() {
 
 # --- The check ---------------------------------------------------------------
 
-in_reject_backoff() {
+# True if the state file $1 holds a timestamp less than $2 seconds old.
+recently() {
     local since now
-    [ -f "$STATE_DIR/rejected" ] || return 1
-    since=$(cat "$STATE_DIR/rejected")
+    [ -f "$STATE_DIR/$1" ] || return 1
+    since=$(cat "$STATE_DIR/$1")
     now=$(date +%s)
-    [ $((now - since)) -lt "$REJECT_BACKOFF_SECONDS" ]
+    [ $((now - since)) -lt "$2" ]
 }
 
 # One pass: is there a VIT portal in the way, and if so, log in.
@@ -402,18 +412,15 @@ check_and_login() {
             transition online "Online ($device, $ip)"
             return 0
             ;;
-        dns)
-            # Only a DNS failure falls back to the gateway: it's what a portal
-            # looks like when every lookup is blocked before login. Logged in,
-            # lookups work, so this can't cause logins on a healthy session.
+        dns|error)
+            # VIT's gateway redirects to the portal even after login, so this
+            # path can't tell logged in from logged out; a login that doesn't
+            # bring the internet back is therefore followed by a pause
+            # (UNVERIFIED_BACKOFF_SECONDS) instead of a retry every run.
             if ! probe_gateway "$(gateway_ip "$device")"; then
                 transition probe-failed "Couldn't check for a captive portal: $PROBE_DETAIL, and the gateway didn't answer"
                 return 1
             fi
-            ;;
-        error)
-            transition probe-failed "Couldn't check for a captive portal: $PROBE_DETAIL"
-            return 1
             ;;
     esac
 
@@ -429,9 +436,15 @@ check_and_login() {
         return 1
     fi
 
-    if [ "$mode" = "auto" ] && in_reject_backoff; then
-        transition backoff "Portal refused the last login; waiting before trying again (or run 'wificonnector login')"
-        return 1
+    if [ "$mode" = "auto" ]; then
+        if recently rejected "$REJECT_BACKOFF_SECONDS"; then
+            transition backoff "Portal refused the last login; waiting before trying again (or run 'wificonnector login')"
+            return 1
+        fi
+        if recently unverified "$UNVERIFIED_BACKOFF_SECONDS"; then
+            transition backoff-unverified "Last login didn't bring the internet back; waiting before trying again (or run 'wificonnector login')"
+            return 1
+        fi
     fi
 
     user=$(config_get USERNAME)
@@ -451,11 +464,13 @@ check_and_login() {
         0)
             rm -f "$STATE_DIR/rejected"
             if revalidate; then
+                rm -f "$STATE_DIR/unverified"
                 transition online "Logged in; internet is up"
                 notify "Logged in to VIT Wi-Fi"
                 return 0
             fi
-            transition no-internet "Portal accepted the login but internet didn't come up"
+            date +%s > "$STATE_DIR/unverified"
+            transition no-internet "Portal accepted the login but the internet check still fails ($PROBE_DETAIL)"
             return 1
             ;;
         2)
@@ -512,7 +527,7 @@ cmd_login() {
     VERBOSE=1
     setup_runtime
     acquire_lock || die "another wificonnector run is in progress; try again in a few seconds"
-    rm -f "$STATE_DIR/paused" "$STATE_DIR/rejected"
+    rm -f "$STATE_DIR/paused" "$STATE_DIR/rejected" "$STATE_DIR/unverified"
     check_and_login manual
 }
 
@@ -579,7 +594,7 @@ cmd_status() {
     echo "Network DNS:  ${NETWORK_DNS:-none offered}"
     if [ -n "$ip" ]; then
         probe
-        if [ "$PROBE_RESULT" = "dns" ] && probe_gateway "$gateway"; then
+        if { [ "$PROBE_RESULT" = "dns" ] || [ "$PROBE_RESULT" = "error" ]; } && probe_gateway "$gateway"; then
             PROBE_RESULT="portal"
         fi
         case $PROBE_RESULT in
@@ -609,6 +624,89 @@ cmd_status() {
     [ -f "$STATE_DIR/paused" ] && echo "Auto-login:   paused (run 'wificonnector login' to resume)"
     [ -f "$STATE_DIR/state" ] && echo "Last state:   $(cat "$STATE_DIR/state")"
     return 0
+}
+
+# --- diagnose: what the script sees, safe to share ---------------------------
+
+# An address's kind instead of the address itself.
+addr_kind() {
+    case $1 in
+        '') echo "none" ;;
+        127.*) echo "loopback (a local DNS proxy, e.g. a VPN or DNS app)" ;;
+        10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) echo "private" ;;
+        100.6[4-9].*|100.[7-9][0-9].*|100.1[01][0-9].*|100.12[0-7].*) echo "shared/CGNAT (often a VPN)" ;;
+        169.254.*) echo "link-local" ;;
+        *:*) echo "IPv6" ;;
+        1.1.1.1|1.0.0.1) echo "public (Cloudflare DNS)" ;;
+        8.8.8.8|8.8.4.4) echo "public (Google DNS)" ;;
+        *) echo "public" ;;
+    esac
+}
+
+route_interface() {
+    route -n get "$1" 2>/dev/null | awk '/interface:/ { print $2; exit }'
+}
+
+# One request, summarised; a redirect to a bare address shows only its kind.
+try_url() {
+    local out rc code host
+    out=$(curl -s -o /dev/null --connect-timeout 3 --max-time 5 \
+        -w '%{http_code} %{redirect_url}' "$@" 2>/dev/null)
+    rc=$?
+    code=${out%% *}
+    host=${out#"$code"}
+    host=$(printf '%s' "${host# }" | sed -E 's#^[a-zA-Z]+://([^/:]+).*#\1#')
+    case $host in
+        '') host="-" ;;
+        *[!0-9.]*) ;;
+        *) host="($(addr_kind "$host") address)" ;;
+    esac
+    printf 'curl-exit=%s http=%s redirect-to=%s' "$rc" "$code" "$host"
+}
+
+diagnose_host() {
+    local host=$1 path=$2 pin address
+    pin=$(pin_host "$host")
+    address=${pin##*:}
+    echo "$host"
+    if [ -n "$address" ]; then
+        echo "  network DNS says: $(addr_kind "$address"), routed via $(route_interface "$address")"
+    else
+        echo "  network DNS says: no answer"
+    fi
+    echo "  via the Mac's DNS:   $(try_url "http://$host$path")"
+    [ -n "$pin" ] && echo "  via network DNS:     $(try_url --resolve "$pin" "http://$host$path")"
+}
+
+cmd_diagnose() {
+    local device ip gateway kinds
+    setup_runtime
+    echo "wificonnector $VERSION diagnose (addresses are shown only as their kind)"
+    echo "macOS:          $(sw_vers -productVersion 2>/dev/null)"
+    if ! device=$(wifi_device); then
+        echo "Wi-Fi:          no interface found"
+        return 1
+    fi
+    ip=$(ipconfig getifaddr "$device" 2>/dev/null)
+    gateway=$(gateway_ip "$device")
+    use_network_dns "$device"
+    if [ -n "$ip" ]; then
+        echo "Wi-Fi:          $device, connected, $(addr_kind "$ip") address"
+    else
+        echo "Wi-Fi:          $device, not connected"
+    fi
+    echo "Gateway:        $(addr_kind "$gateway")"
+    echo "Network DNS:    $(addr_kind "$NETWORK_DNS")"
+    kinds=$(for ns in $(scutil --dns 2>/dev/null | awk '/nameserver\[/ { print $3 }'); do
+        addr_kind "$ns"
+    done | sort -u | paste -s -d ';' -)
+    echo "Mac's DNS:      ${kinds:-none}"
+    echo "Default route:  via $(route_interface default) (utun* = a VPN tunnel)"
+    diagnose_host "$PROBE_HOST" /generate_204
+    diagnose_host "$pronto_fingerprint" "$PRONTO_LOGIN_PATH"
+    [ -n "$gateway" ] && echo "gateway:             $(try_url "http://$gateway/")"
+    echo "raw IP, no DNS:      $(try_url http://1.1.1.1/)"
+    echo "SSID readable:  $([ -n "$(read_ssid "$device")" ] && echo yes || echo "no (hidden by macOS)")"
 }
 
 xml_escape() {
@@ -710,6 +808,7 @@ Usage: wificonnector <command>
   login          Log in now and resume auto-login, showing every step
   logout         Log out and pause auto-login (--no-pause keeps it running)
   status         Show the Wi-Fi, portal, credential and agent state
+  diagnose       Network details for troubleshooting, without any addresses
   install        Install the background agent (runs at login)
   uninstall      Remove the agent (--purge also deletes your credentials)
   run            One quiet check-and-login pass (what the agent runs)
@@ -725,6 +824,7 @@ main() {
         logout) cmd_logout "$@" ;;
         setup) cmd_setup ;;
         status) cmd_status ;;
+        diagnose) cmd_diagnose ;;
         install) cmd_install ;;
         uninstall) cmd_uninstall "$@" ;;
         version|--version|-v) echo "wificonnector $VERSION" ;;

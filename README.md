@@ -51,6 +51,7 @@ wificonnector login          Log in now (also resumes auto-login)
 wificonnector logout         Log out and pause auto-login
 wificonnector logout --no-pause   Log out but keep auto-login running
 wificonnector status         Wi-Fi, portal, credentials and agent state
+wificonnector diagnose       Network details for troubleshooting, safe to share (no addresses)
 wificonnector install        Install or update the background agent
 wificonnector uninstall      Remove the agent (--purge also deletes credentials)
 ```
@@ -91,7 +92,7 @@ again, so a wrong password can't get your account locked.
 | Symptom | What to do |
 |---|---|
 | `status` shows `(name hidden by macOS)` | Normal on macOS 14+. To make it visible to the script: `sudo ipconfig setverbose 1` |
-| "DNS lookup failed" before login | You use a custom DNS, the Cloudflare 1.1.1.1 app, a VPN or Private Relay. The script works around it (via the network's own DNS, then the gateway); if it still fails, send `wificonnector status` |
+| "DNS lookup failed" or "curl exit 7" before login | You use a custom DNS, the Cloudflare 1.1.1.1/WARP app, a VPN or Private Relay. The script works around it (via the network's own DNS, then the gateway); if it still fails, send the output of `wificonnector diagnose` |
 | Log says "not a VIT portal" | The portal isn't Pronto (an academic block, perhaps). Run `curl -sv http://clients3.google.com/generate_204 -o /dev/null` and open an issue with the `Location:` line |
 | Log says "Login refused" | Check your password with `wificonnector setup`, then `wificonnector login` |
 | A "security wants to access" dialog | Choose **Always Allow**. It shows up if the Keychain item was created some other way |

@@ -80,13 +80,28 @@ Cloudflare app. The script handles it in two layers:
    @<server> <host>` asks it, and `curl --resolve host:80:<address>` uses the
    answer for that one request. Only the probe, login and logout requests do
    this; everything else on the Mac keeps using your resolver.
-2. **Recognize the portal without DNS.** If even that fails, the script
-   requests the gateway by its IP address (`http://<gateway>/`). VIT's gateway
-   answers with a `302` to `phc.prontonetworks.com`, which is the same
-   fingerprint, obtained without a single lookup. This only runs when the
-   probe failed on DNS: when you're logged in your lookups work, so it can't
-   trigger logins on a healthy session (the gateway redirects to the portal
-   even then).
+2. **Recognize the portal from the gateway.** If the probe still fails, the
+   script requests the gateway by its IP address (`http://<gateway>/`). VIT's
+   gateway answers with a `302` to `phc.prontonetworks.com`, which is the same
+   fingerprint, obtained without DNS or the internet.
+
+That second layer also covers **VPNs**. The same Mac turned out to run the
+Cloudflare app in WARP mode, a VPN that routes all traffic into a tunnel. Before
+login the tunnel can't come up, so the probe's connection was dropped on the
+Mac itself: curl exit 7, "failed to connect after 0 ms". VPNs leave the local
+network outside the tunnel, so the gateway still answers.
+
+The catch: VIT's gateway redirects to the portal *even when you're logged
+in*, so the gateway alone can't tell logged in from logged out. If the probe
+were failing for some other reason while you're online, every run would log in
+again. So a login that the portal accepts but that doesn't bring the internet
+check back starts a 2-minute pause on auto-login (`UNVERIFIED_BACKOFF_SECONDS`).
+Being online is still noticed during the pause, because it only holds back
+logins. Revalidation also waits a little longer than Latch's (5 retries, 2s
+apart), because a VPN needs a few seconds to reconnect once the portal opens.
+
+`wificonnector diagnose` prints all of this (resolvers, routes, gateway answer)
+with every address replaced by its kind, so the output can be shared safely.
 
 Then the login POST goes to `phc.prontonetworks.com` (resolved through the
 network's DNS), or, if that fails, to the gateway IP, Latch's fallback.
@@ -127,8 +142,9 @@ userId=22BCE1234&password=...&serviceName=ProntoAuthentication
 
 Latch's comment on this is worth repeating: *"Matching on response HTML is ugly
 but it is the only signal Pronto's portal gives us."* So the real test comes
-afterwards. Re-run the probe (immediately, then up to 3 more times, 2s apart)
-and only call it a success when it returns `204`.
+afterwards. Re-run the probe (immediately, then up to 3 more times 2s apart in
+Latch; 5 in wificonnector, see §2) and only call it a success when it returns
+`204`.
 
 **Two fallbacks**, also from Latch:
 
