@@ -173,7 +173,7 @@ Each Latch piece has a much smaller macOS equivalent:
 
 | Latch | wificonnector |
 |---|---|
-| `CaptivePortalDetector.probe()` | `probe()`: `curl --interface en0 -D headers -w '%{http_code}'` |
+| `CaptivePortalDetector.probe()` | `probe()`: `curl -D headers -w '%{http_code}'` |
 | `AutoLoginManager.attemptLogin()` | `pronto_post()` + `login_pronto()` |
 | `LatchEngine.checkAndAct()` | `check_and_login()` |
 | revalidation loop | `revalidate()` |
@@ -181,7 +181,7 @@ Each Latch piece has a much smaller macOS equivalent:
 | 60s health-check coroutine | launchd `StartInterval` (15s, see §8) |
 | `CredentialStore` (Keychain via JNA) | `security` command-line tool |
 | `isVitCampusSsid()` | `is_campus_ssid()`, plus the portal fingerprint (§7) |
-| `NetworkHandle` / `bindProcess()` | `curl --interface <wifi device>` |
+| `NetworkHandle` / `bindProcess()` | nothing: requests take the normal route (see §6) |
 | file logger | launchd's `StandardOutPath` |
 | tray/system notifications | `osascript -e 'display notification ...'` |
 
@@ -269,11 +269,23 @@ associated. (`sudo ipconfig setverbose 1` makes `ipconfig` print the real
 name again on many versions.) That's why wificonnector can't rely on the
 SSID alone. See §7.
 
-### Binding to Wi-Fi
+### Not binding to Wi-Fi
 
-If your Mac is also on Ethernet, a plain request might leave through the
-wrong interface. `curl --interface en0` forces the probe and the login out
-through Wi-Fi, which is what Latch's `bindProcess(handle)` does on Android.
+On Android, Latch pins its requests to the Wi-Fi network
+(`bindProcess(handle)`), because a phone also has mobile data. The first
+version of this script did the same with `curl --interface en0`. On a real
+MacBook Air at VIT that made *every* request fail in milliseconds with curl
+exit 7 ("couldn't connect"), while the same request without the option got
+its `204`. A likely cause is that binding to a device makes curl choose a
+source address on it that can't reach the destination (e.g. the link-local
+IPv6 address). The option was removed. Requests now leave the way macOS
+routes everything else, which is through Wi-Fi unless an Ethernet cable is
+also plugged in. In that rare case the script just sees Ethernet's
+connectivity, which is harmless.
+
+The lesson generalises: a stub-based test can only check that the script
+*passes* an option, not that the option does what you think on the real OS.
+That gap is why every change still gets a run on a real Mac.
 
 ### The Captive Network Assistant
 

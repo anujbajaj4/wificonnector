@@ -117,7 +117,8 @@ password_only_on_stdin() {
     check "password never logged" not grep -qF 'p@ss&w=rd' "$SANDBOX/out"
     check "form fields as Latch sends them" \
         grep -qF -- "--data-urlencode userId=22BCE1234 --data-urlencode password@- --data-urlencode serviceName=ProntoAuthentication" "$STUB_DIR/curl_calls"
-    check "requests go out over the Wi-Fi device" grep -qF -- "--interface en0" "$STUB_DIR/curl_calls"
+    # --interface en0 made every request fail on a real MacBook (curl exit 7).
+    check "requests use the system's normal route" not grep -qF -- "--interface" "$STUB_DIR/curl_calls"
 }
 
 pronto_in_page_body_logs_in() {

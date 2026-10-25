@@ -192,7 +192,7 @@ is_campus_ssid() {
 
 # --- Probe -------------------------------------------------------------------
 
-# Requests PROBE_URL over the Wi-Fi device without following redirects. Sets
+# Requests PROBE_URL without following redirects. Sets
 # PROBE_RESULT to online, portal, dns or error; the portal's response is left
 # in $TMP/probe.headers and $TMP/probe.body for the fingerprint check.
 probe() {
@@ -200,7 +200,7 @@ probe() {
     : > "$TMP/probe.headers"
     : > "$TMP/probe.body"
     code=$(curl -sS -o "$TMP/probe.body" -D "$TMP/probe.headers" -w '%{http_code}' \
-        --interface "$1" --connect-timeout 3 --max-time 3 \
+        --connect-timeout 3 --max-time 3 \
         "$PROBE_URL" 2>"$TMP/probe.err")
     rc=$?
     PROBE_DETAIL=""
@@ -237,7 +237,7 @@ detect_profile() {
 revalidate() {
     local attempt=0
     while :; do
-        probe "$1"
+        probe
         [ "$PROBE_RESULT" = "online" ] && return 0
         [ "$attempt" -ge 3 ] && return 1
         attempt=$((attempt + 1))
@@ -252,10 +252,10 @@ revalidate() {
 # on stdin (password@-), so it never appears in the process list. Sets
 # HTTP_CODE and returns curl's exit status.
 pronto_post() {
-    local host=$1 user=$2 password=$3 device=$4
+    local host=$1 user=$2 password=$3
     : > "$TMP/login.body"
     HTTP_CODE=$(printf '%s' "$password" | curl -sS -o "$TMP/login.body" -w '%{http_code}' \
-        --interface "$device" --connect-timeout 5 --max-time 10 \
+        --connect-timeout 5 --max-time 10 \
         -A "$PORTAL_USER_AGENT" \
         -H 'Content-Type: application/x-www-form-urlencoded' \
         --data-urlencode "userId=$user" \
@@ -267,18 +267,18 @@ pronto_post() {
 # Returns 0 when the portal accepted the login, 2 when it refused the
 # credentials, 1 for anything else (network error, unexpected response).
 login_pronto() {
-    local user=$1 password=$2 device=$3 gateway=$4 rc
-    pronto_post "$pronto_fingerprint" "$user" "$password" "$device"
+    local user=$1 password=$2 gateway=$3 rc
+    pronto_post "$pronto_fingerprint" "$user" "$password"
     rc=$?
     if [ "$rc" -eq 6 ] && [ -n "$gateway" ]; then
         # The portal host didn't resolve; Latch then talks to the gateway directly.
         log "Portal host didn't resolve; retrying via gateway $gateway"
-        pronto_post "$gateway" "$user" "$password" "$device"
+        pronto_post "$gateway" "$user" "$password"
         rc=$?
     elif [ "$rc" -ne 0 ]; then
         debug "Login request failed (curl exit $rc); retrying once"
         sleep 1
-        pronto_post "$pronto_fingerprint" "$user" "$password" "$device"
+        pronto_post "$pronto_fingerprint" "$user" "$password"
         rc=$?
     fi
     if [ "$rc" -ne 0 ]; then
@@ -307,13 +307,13 @@ login_pronto() {
 }
 
 logout_pronto() {
-    local device=$1 gateway=$2 code rc
-    code=$(curl -sS -o /dev/null -w '%{http_code}' --interface "$device" \
+    local gateway=$1 code rc
+    code=$(curl -sS -o /dev/null -w '%{http_code}' \
         --connect-timeout 3 --max-time 5 \
         "http://$pronto_fingerprint$PRONTO_LOGOUT_PATH" 2>"$TMP/logout.err")
     rc=$?
     if [ "$rc" -eq 6 ] && [ -n "$gateway" ]; then
-        code=$(curl -sS -o /dev/null -w '%{http_code}' --interface "$device" \
+        code=$(curl -sS -o /dev/null -w '%{http_code}' \
             --connect-timeout 3 --max-time 5 \
             "http://$gateway$PRONTO_LOGOUT_PATH" 2>"$TMP/logout.err")
         rc=$?
@@ -350,7 +350,7 @@ check_and_login() {
         return 1
     fi
 
-    probe "$device"
+    probe
     case $PROBE_RESULT in
         online)
             transition online "Online ($device, $ip)"
@@ -388,14 +388,14 @@ check_and_login() {
 
     gateway=$(gateway_ip "$device")
     log "VIT portal ($profile) detected on '${ssid:-name hidden by macOS}'; logging in as $user"
-    "login_$profile" "$user" "$password" "$device" "$gateway"
+    "login_$profile" "$user" "$password" "$gateway"
     rc=$?
     password=""
 
     case $rc in
         0)
             rm -f "$STATE_DIR/rejected"
-            if revalidate "$device"; then
+            if revalidate; then
                 transition online "Logged in; internet is up"
                 notify "Logged in to VIT Wi-Fi"
                 return 0
@@ -471,7 +471,7 @@ cmd_logout() {
         : > "$STATE_DIR/paused"
         echo "Auto-login paused until you run 'wificonnector login'."
     fi
-    if logout_pronto "$device" "$gateway"; then
+    if logout_pronto "$gateway"; then
         echo "Logged out of VIT Wi-Fi."
     else
         die "logout request failed (are you on VIT Wi-Fi?)"
@@ -520,7 +520,7 @@ cmd_status() {
     echo "Network:      ${ssid:-(name hidden by macOS)}"
     echo "Gateway:      ${gateway:--}"
     if [ -n "$ip" ]; then
-        probe "$device"
+        probe
         case $PROBE_RESULT in
             online) echo "Internet:     online" ;;
             portal)
