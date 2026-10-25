@@ -1,0 +1,13 @@
+#!/bin/bash
+# Fake ipconfig. STUB_IP / STUB_GATEWAY set to "" mean "none".
+case $1 in
+    getifaddr) ip=${STUB_IP-10.1.2.3}; [ -n "$ip" ] || exit 1; echo "$ip" ;;
+    getoption) gw=${STUB_GATEWAY-172.18.0.1}; [ -n "$gw" ] || exit 1; echo "$gw" ;;
+    getsummary)
+        echo "<dictionary> {"
+        echo "  BSSID : 0:11:22:33:44:55"
+        [ -n "${STUB_SSID-}" ] && echo "  SSID : $STUB_SSID"
+        echo "  InterfaceType : WiFi"
+        echo "}"
+        ;;
+esac

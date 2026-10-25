@@ -1,0 +1,4 @@
+#!/bin/bash
+printf '%s\n' "$*" >> "$STUB_DIR/launchctl_calls"
+[ "$1" = print ] && exit "${STUB_AGENT_MISSING:-0}"
+exit 0

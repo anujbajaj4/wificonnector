@@ -1,0 +1,10 @@
+#!/bin/bash
+# Fake Keychain: STUB_PASSWORD is the saved password (unset = no item).
+printf '%s\n' "$*" >> "$STUB_DIR/security_calls"
+case $1 in
+    find-generic-password)
+        [ -n "${STUB_PASSWORD+set}" ] || exit 44
+        printf '%s\n' "$STUB_PASSWORD"
+        ;;
+esac
+exit 0
