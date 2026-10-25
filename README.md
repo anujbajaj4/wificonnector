@@ -14,6 +14,12 @@ Android, Windows and Linux.
 Want to know how it works, or build your own? Read
 [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 
+## Tested on
+
+A MacBook Air running macOS 27 on VIT Vellore hostel Wi-Fi: manual login,
+logout, automatic re-login by the background agent, and all of these with
+Cloudflare's 1.1.1.1 app switched on.
+
 ## Requirements
 
 - macOS 12 or later (everything it uses ships with macOS)
