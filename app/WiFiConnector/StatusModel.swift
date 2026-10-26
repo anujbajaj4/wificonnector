@@ -8,6 +8,10 @@ import ServiceManagement
 /// the menu whenever they change. Script calls block, so they run on a
 /// background queue and publish their results back on the main queue.
 final class StatusModel: ObservableObject {
+    /// One model for the whole app: the SwiftUI scenes and the AppKit
+    /// welcome window share it.
+    static let shared = StatusModel()
+
     @Published private(set) var info = EngineInfo()
     /// A login, logout or install is running.
     @Published private(set) var busy = false

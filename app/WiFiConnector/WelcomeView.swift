@@ -1,13 +1,15 @@
 import AppKit
 import SwiftUI
 
-/// Opens by itself on the first launch, and from "Set Up…" in the menu. One
-/// form and one button replace the three menu steps (Settings, Install
-/// Background Agent, Start at Login), then it shows where the icon lives,
-/// because a menu-bar app has no window or Dock icon to find it by.
+/// Opens by itself on the first launch, and from "Set Up…" in the menu (see
+/// WelcomeWindow, which hosts it). One form and one button replace the three
+/// menu steps (Settings, Install Background Agent, Start at Login), then it
+/// shows where the icon lives, because a menu-bar app has no window or Dock
+/// icon to find it by.
 struct WelcomeView: View {
     @ObservedObject var model: StatusModel
-    @Environment(\.dismissWindow) private var dismissWindow
+    /// Closes the window it's in.
+    let close: () -> Void
 
     @State private var user = ""
     @State private var password = ""
@@ -26,12 +28,7 @@ struct WelcomeView: View {
         }
         .padding(24)
         .frame(width: 440)
-        .onAppear {
-            user = model.info.user
-            // A menu-bar app isn't activated by opening a window, so without
-            // this the window can open behind Terminal or the browser.
-            NSApp.activate()
-        }
+        .onAppear { user = model.info.user }
     }
 
     private var header: some View {
@@ -176,7 +173,7 @@ struct WelcomeView: View {
                     Button("Change Password") { self.outcome = nil }
                 }
                 Spacer()
-                Button("Done") { dismissWindow() }
+                Button("Done") { close() }
                     .keyboardShortcut(.defaultAction)
             }
         }

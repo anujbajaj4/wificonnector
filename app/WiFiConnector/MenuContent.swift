@@ -35,7 +35,7 @@ struct MenuContent: View {
             Button("Update Background Agent") { model.installAgent() }
                 .disabled(model.busy)
         }
-        Button("Set Up…") { open("welcome") }
+        Button("Set Up…") { WelcomeWindow.shared.show(model: model) }
         Button("Settings…") { open("settings") }
             .keyboardShortcut(",")
         Button("Open Log") { model.openLog() }
