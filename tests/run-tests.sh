@@ -28,6 +28,9 @@ fresh() {
     export HOME="$SANDBOX/home" TMPDIR="$SANDBOX/tmp" STUB_DIR="$SANDBOX/stub"
     mkdir -p "$HOME" "$TMPDIR" "$STUB_DIR"
     export WIFICONNECTOR_REVALIDATE_DELAY=0 WIFICONNECTOR_IP_WAIT_DELAY=0 WIFICONNECTOR_ROUTE_WAIT_DELAY=0
+    # As if run by the menu-bar app, with no terminal, even when the tests
+    # themselves run in one.
+    export WIFICONNECTOR_TERMINAL="$SANDBOX/no-terminal"
     STATE="$HOME/Library/Caches/wificonnector"
 }
 
@@ -444,6 +447,13 @@ set_credentials_needs_a_password() {
     check "says why" grep -q "no password" "$SANDBOX/out"
 }
 
+set_credentials_refuses_a_terminal() {
+    printf 'secret\n' | WIFICONNECTOR_TERMINAL=/dev/null PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials 26BCE0000 > "$SANDBOX/out" 2>&1
+    check "fails" [ $? -ne 0 ]
+    check "saves nothing" [ "$(count "$STUB_DIR/security_calls")" = 0 ]
+    check "points to setup" grep -q "use 'wificonnector setup'" "$SANDBOX/out"
+}
+
 pause_and_resume() {
     with_credentials
     behind_pronto
@@ -556,6 +566,7 @@ for t in \
     setup_saves_to_keychain \
     set_credentials_reads_stdin \
     set_credentials_needs_a_password \
+    set_credentials_refuses_a_terminal \
     pause_and_resume \
     info_reports_state \
     info_when_nothing_is_set_up \

@@ -47,6 +47,8 @@ UNVERIFIED_BACKOFF_SECONDS=60
 # route to come back.
 ROUTE_WAIT_ATTEMPTS="${WIFICONNECTOR_ROUTE_WAIT_ATTEMPTS:-15}"
 ROUTE_WAIT_DELAY="${WIFICONNECTOR_ROUTE_WAIT_DELAY:-2}"
+# The terminal set-credentials refuses to run from; the tests point it elsewhere.
+TERMINAL_DEVICE="${WIFICONNECTOR_TERMINAL:-/dev/tty}"
 
 # Any HTTP URL that answers 204 with an empty body on the open internet. A
 # captive portal intercepts it, which is how we notice the portal.
@@ -631,7 +633,7 @@ cmd_set_credentials() {
     local user password
     user=$(normalize_user "${1:-}")
     [ -n "$user" ] || die "usage: wificonnector set-credentials <registration number> < password"
-    if (: < /dev/tty) 2>/dev/null; then
+    if (: < "$TERMINAL_DEVICE") 2>/dev/null; then
         die "set-credentials is for the menu-bar app; in Terminal use 'wificonnector setup'"
     fi
     IFS= read -r password || true
