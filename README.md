@@ -19,7 +19,8 @@ Want to know how it works, or build your own? Read
 
 A MacBook Air running macOS 27 on VIT Vellore hostel Wi-Fi: manual login,
 logout, automatic re-login by the background agent, and all of these with
-Cloudflare's 1.1.1.1 app switched on.
+Cloudflare's 1.1.1.1 app switched on. The v0.2.0 `.dmg` was downloaded,
+installed and opened through Open Anyway on the same Mac.
 
 ## Requirements
 
@@ -34,9 +35,13 @@ Cloudflare's 1.1.1.1 app switched on.
    and open it.
 2. Drag **WiFiConnector** onto **Applications**.
 3. Open WiFiConnector from Applications. macOS says it can't verify the app,
-   because it isn't signed with a paid Apple Developer ID. Click **Done**.
+   because it isn't signed with a paid Apple Developer ID. Click **Done**, not
+   Move to Trash.
 4. Open **System Settings ▸ Privacy & Security**, scroll down, and click
-   **Open Anyway** next to WiFiConnector. You only do this once.
+   **Open Anyway** next to WiFiConnector. You only do this once. The button
+   shows for about an hour after the blocked launch; if it's gone, open the
+   app again first. Or skip Settings and run this in Terminal instead:
+   `xattr -dr com.apple.quarantine /Applications/WiFiConnector.app`
 5. Click the Wi-Fi icon in the menu bar. Choose **Settings…** to save your
    registration number and password, then **Install Background Agent**, and
    tick **Start at Login**.
