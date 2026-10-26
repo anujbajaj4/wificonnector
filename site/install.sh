@@ -82,6 +82,8 @@ main() {
 WiFiConnector is opening. In its welcome window, type your registration
 number and Wi-Fi password and click Save and Turn On. From then on it logs
 you in by itself, and its Wi-Fi icon sits in the menu bar at the top right.
+
+No welcome window? Click that Wi-Fi icon in the menu bar and choose Set Up…
 EOF
 }
 
