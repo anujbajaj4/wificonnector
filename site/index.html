@@ -186,11 +186,6 @@ code, kbd, .mono { font-family: var(--font-mono); }
 .cmd .prompt { color: var(--blue); flex: none; }
 .cmd .ico { font-size: 17px; color: var(--ink-3); }
 .cmd.copied .ico { color: var(--ok); }
-.routes { display: flex; flex-wrap: wrap; gap: 10px; }
-.routes .tag { padding: 4px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); color: #FFFFFF; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
-.download .routes { justify-content: center; }
-.hero .routes { display: grid; grid-template-columns: 1fr 1fr; max-width: 460px; }
-.hero .routes .btn-primary { grid-column: 1 / -1; }
 
 /* Nav */
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-top: 14px; }
@@ -394,8 +389,9 @@ button.menu-item:disabled { color: var(--ink-3); cursor: default; }
   transition: color 0.2s ease;
 }
 .segmented button[aria-selected="true"] { color: var(--ink); }
+.segmented .tag { margin-left: 6px; padding: 3px 8px; font-size: 11.5px; vertical-align: 1px; }
 .segmented .thumb {
-  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0;
+  position: absolute; z-index: 0; top: 4px; left: 0; width: 0; height: calc(100% - 8px);
   border-radius: 999px; background: #FFFFFF;
   box-shadow: 0 1px 2px rgba(20, 30, 50, 0.12), 0 4px 12px -4px rgba(20, 30, 50, 0.25);
   transition: left 0.35s var(--spring), width 0.35s var(--spring);
@@ -682,8 +678,9 @@ kbd.key {
 
 @media (max-width: 700px) {
   body { font-size: 16px; }
-  .routes .btn { width: 100%; }
-  .hero .routes { grid-template-columns: minmax(0, 1fr); max-width: none; }
+  .hero .cta-row .btn, .download .cta-row .btn { width: 100%; justify-content: center; }
+  /* The setup options stack, so the Recommended tag fits. */
+  #setup-tabs { grid-auto-flow: row; width: 100%; border-radius: 24px; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .nav, .menu, .settings-win, .toast, .nav-links { background: rgba(248, 249, 251, 0.96); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -780,7 +777,7 @@ kbd.key {
         <li><a href="#privacy">Privacy</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
-      <a class="btn btn-primary btn-small" href="#get-started" data-route="oneline">Install</a>
+      <a class="btn btn-primary btn-small" href="#get-started" data-route="oneline">Download</a>
       <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
         <svg class="ico"><use href="#i-menu"/></svg>
       </button>
@@ -795,10 +792,15 @@ kbd.key {
       <h1>Never log in to VIT Wi-Fi again.</h1>
       <div class="hero-side">
         <p class="lead">wificonnector spots the VIT Vellore hostel login page the moment your Mac joins the network and signs you in with your saved details. It sits in your menu bar and keeps you online.</p>
-        <div class="routes">
-          <a class="btn btn-primary" href="#get-started" data-route="oneline">Install with Terminal <span class="tag">Recommended</span></a>
-          <a class="btn btn-quiet" href="#get-started" data-route="app">Download the .dmg</a>
-          <a class="btn btn-quiet" href="#get-started" data-route="terminal">Script only</a>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#get-started" data-route="oneline">
+            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
+            Download for Mac
+          </a>
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            Source on GitHub
+          </a>
         </div>
         <p class="fine">Free and open source. Needs macOS 15 or later, on Apple silicon or Intel.</p>
       </div>
@@ -983,14 +985,14 @@ kbd.key {
     <div class="wrap">
       <div class="chapter-head">
         <h2 class="h2">Set it up</h2>
-        <p class="lead">One command in Terminal is the easiest way, and the one we recommend. You can also download the app yourself, or run only the script. Tick each step as you finish it.</p>
+        <p class="lead">Pick how to install. Terminal is the quickest, and macOS shows no security warning. Tick each step as you finish it.</p>
       </div>
       <div class="seg-scroll">
         <div class="segmented" id="setup-tabs" role="tablist" aria-label="Setup method">
           <span class="thumb" aria-hidden="true"></span>
-          <button type="button" role="tab" aria-selected="true" data-setup="oneline">One command (recommended)</button>
+          <button type="button" role="tab" aria-selected="true" data-setup="oneline">Terminal<span class="tag">Recommended</span></button>
           <button type="button" role="tab" aria-selected="false" data-setup="app">Download the .dmg</button>
-          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Script only (advanced)</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Script only</button>
         </div>
       </div>
       <ol class="setup" id="setup"></ol>
@@ -1064,10 +1066,15 @@ kbd.key {
         </svg>
         <h2 class="h2">Get wificonnector</h2>
         <p class="lead">For Macs running macOS 15 or later, on VIT hostel Wi-Fi.</p>
-        <div class="routes">
-          <a class="btn btn-primary" href="#get-started" data-route="oneline">Install with Terminal <span class="tag">Recommended</span></a>
-          <a class="btn btn-quiet" href="#get-started" data-route="app">Download the .dmg</a>
-          <a class="btn btn-quiet" href="#get-started" data-route="terminal">Script only</a>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#get-started" data-route="oneline">
+            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
+            Download for Mac
+          </a>
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            Source on GitHub
+          </a>
         </div>
       </div>
     </div>
@@ -1232,6 +1239,8 @@ kbd.key {
       var current = root.querySelector('[aria-selected="true"]');
       thumb.style.left = current.offsetLeft + "px";
       thumb.style.width = current.offsetWidth + "px";
+      thumb.style.top = current.offsetTop + "px";
+      thumb.style.height = current.offsetHeight + "px";
     }
     buttons.forEach(function (button) {
       button.addEventListener("click", function () {
@@ -1663,8 +1672,8 @@ kbd.key {
     $("setup-bar").style.width = (n / 3 * 100) + "%";
   }
   var setupTabs = segmented($("setup-tabs"), function (button) { setupMode = button.getAttribute("data-setup"); renderSetup(); });
-  // The install options at the top and bottom of the page (and the nav's
-  // Install) open their tab here; the link itself does the scrolling.
+  // Download for Mac (top, bottom and nav) opens the recommended tab here;
+  // the link itself does the scrolling.
   document.querySelectorAll("[data-route]").forEach(function (link) {
     link.addEventListener("click", function () {
       var tab = document.querySelector('#setup-tabs [data-setup="' + link.getAttribute("data-route") + '"]');
@@ -1704,12 +1713,12 @@ kbd.key {
     var place = link.closest(".hero") ? "hero" : link.closest("#get-started") ? "setup" : "section";
     window.goatcounter.count({ path: "download-" + place, title: "Download .dmg", event: true });
   });
-  // So does each install option, by route and place.
+  // So does Download for Mac, by where it was clicked.
   document.addEventListener("click", function (event) {
     var link = event.target.closest("[data-route]");
     if (!link || !window.goatcounter || !window.goatcounter.count) return;
     var place = link.closest(".hero") ? "hero" : link.closest(".nav") ? "nav" : "section";
-    window.goatcounter.count({ path: "route-" + link.getAttribute("data-route") + "-" + place, title: "Install option", event: true });
+    window.goatcounter.count({ path: "download-button-" + place, title: "Download for Mac", event: true });
   });
   // Copying the install command counts the same way.
   document.addEventListener("click", function (event) {
