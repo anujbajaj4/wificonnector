@@ -75,7 +75,7 @@ commands made for it:
 ```text
 wificonnector info                    # state as key=value lines, no network requests
 wificonnector login | logout | pause | resume | install
-wificonnector set-credentials 22BCE1234 < password
+wificonnector set-credentials 26BCE0000 < password
 ```
 
 `info` is cheap (it reads a few files and asks launchd and the Keychain about

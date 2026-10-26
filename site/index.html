@@ -185,6 +185,10 @@ code, kbd, .mono { font-family: var(--font-mono); }
 .cmd .prompt { color: var(--blue); flex: none; }
 .cmd .ico { font-size: 17px; color: var(--ink-3); }
 .cmd.copied .ico { color: var(--ok); }
+.install-line { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; justify-items: start; min-width: 0; margin-top: 18px; }
+.install-line .cmd { max-width: min(100%, 560px); min-width: 0; }
+.install-line small { font-size: 14px; color: var(--ink-3); }
+.download .install-line { justify-items: center; }
 
 /* Nav */
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-top: 14px; }
@@ -603,6 +607,14 @@ kbd.key {
 .vis-stack { display: grid; justify-items: end; gap: 0; width: 100%; max-width: 280px; }
 .form-mock { display: grid; gap: 8px; }
 .form-mock label { display: grid; gap: 3px; font-size: 11px; color: var(--ink-2); }
+.term-mock { display: grid; gap: 3px; width: 100%; padding: 10px 12px 12px; background: var(--night); color: var(--night-ink); font: 400 11px/1.5 var(--font-mono); }
+.term-mock .p { color: #7CC4FF; }
+.term-mock .ok { color: #7EE2A8; }
+.term-mock span { overflow-wrap: anywhere; }
+.steps-mock { display: grid; gap: 4px; font-size: 11px; }
+.steps-mock span { display: flex; align-items: center; gap: 6px; }
+.steps-mock .ico { font-size: 12px; color: var(--ok); }
+.tray.ring { box-shadow: 0 0 0 2px var(--blue); background: transparent; color: var(--blue); }
 .form-mock .field-mock { padding: 5px 8px; border-radius: 6px; background: #FFFFFF; box-shadow: 0 0 0 1px var(--line-2); font-size: 12px; color: var(--ink); }
 @media (max-width: 900px) { .vis { margin-left: 0; } }
 
@@ -791,6 +803,10 @@ kbd.key {
             Source on GitHub
           </a>
         </div>
+        <div class="install-line">
+          <small>Or paste this in Terminal. No security warning, and the setup window opens by itself.</small>
+          <button class="cmd" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span>curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><svg class="ico"><use href="#i-copy"/></svg></button>
+        </div>
         <p class="fine">Free and open source. Needs macOS 15 or later, on Apple silicon or Intel.</p>
       </div>
     </div>
@@ -974,13 +990,14 @@ kbd.key {
     <div class="wrap">
       <div class="chapter-head">
         <h2 class="h2">Set it up</h2>
-        <p class="lead">Download the app, or set it up from Terminal. Tick each step as you finish it.</p>
+        <p class="lead">One command is the quickest way. You can also download the app yourself, or run only the script. Tick each step as you finish it.</p>
       </div>
       <div class="seg-scroll">
         <div class="segmented" id="setup-tabs" role="tablist" aria-label="Setup method">
           <span class="thumb" aria-hidden="true"></span>
-          <button type="button" role="tab" aria-selected="true" data-setup="app">Download the app</button>
-          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Terminal</button>
+          <button type="button" role="tab" aria-selected="true" data-setup="oneline">One command (easiest)</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="app">Download the app</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Script only</button>
         </div>
       </div>
       <ol class="setup" id="setup"></ol>
@@ -1064,7 +1081,11 @@ kbd.key {
             Source on GitHub
           </a>
         </div>
-        <p class="note">The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
+        <div class="install-line">
+          <small>Or paste this in Terminal. No security warning, and the setup window opens by itself.</small>
+          <button class="cmd" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span>curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><svg class="ico"><use href="#i-copy"/></svg></button>
+        </div>
+        <p class="note">Downloaded the .dmg instead? The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
       </div>
     </div>
   </section>
@@ -1087,11 +1108,15 @@ kbd.key {
         </details>
         <details name="faq">
           <summary>Do I need Xcode?<svg class="ico"><use href="#i-plus"/></svg></summary>
-          <p>No. Download the app from the latest release. Xcode is only for building it yourself.</p>
+          <p>No. The one-line command, or the .dmg from the latest release, gives you the finished app. Xcode is only for building it yourself.</p>
         </details>
         <details name="faq">
           <summary>Why does macOS say it can't verify the app?<svg class="ico"><use href="#i-plus"/></svg></summary>
-          <p>Apple only vouches for apps signed with a paid Developer ID, and this free app isn't. Click Done, not Move to Trash. Then open System Settings, go to Privacy &amp; Security and click Open Anyway once. Prefer Terminal? <code>xattr -dr com.apple.quarantine /Applications/WiFiConnector.app</code> does the same. The code is public, so you can check what it does first.</p>
+          <p>Apple only vouches for apps signed with a paid Developer ID, and this free app isn't. macOS warns about apps your browser downloaded, so install with the one-line command instead and you never see it. Already downloaded the .dmg? Click Done, not Move to Trash. Then open System Settings, go to Privacy &amp; Security and click Open Anyway once. The code is public, so you can check what it does first.</p>
+        </details>
+        <details name="faq">
+          <summary>I can't find the icon. Where is it?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>At the top right of the screen, in the menu bar, next to the clock and the battery. On a MacBook with a notch, icons that don't fit are hidden behind it: quit an app with a menu-bar icon and it shows up. It's working either way, and you can reopen the welcome window from its menu with Set Up….</p>
         </details>
         <details name="faq">
           <summary>What happens if my password is wrong?<svg class="ico"><use href="#i-plus"/></svg></summary>
@@ -1544,7 +1569,7 @@ kbd.key {
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Downloads") +
         '<div class="mac-body"><div class="list-head">Today</div><div class="file-row hl">' + DISK + 'WiFiConnector.dmg<small>429 KB</small></div></div>' +
       '</div></div>' + cap(1, "<b>Open WiFiConnector.dmg</b> from your Downloads.") + '</figure>' +
-      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.2.0") +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.3.0") +
         '<div class="dmg-body"><div class="dmg-item">' + APP_TILE + 'WiFiConnector</div>' +
         '<svg class="dmg-arrow" viewBox="0 0 70 34" aria-hidden="true"><path d="M4 26C20 4 46 4 62 22" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M54 21l9 2-2-9" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '<div class="dmg-item hl">' + FOLDER + 'Applications</div></div>' +
@@ -1560,17 +1585,21 @@ kbd.key {
       '</div></div>' + cap(2, "Open <b>System Settings ▸ Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.") + '</figure>' +
       '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi"/></svg></span><span>Mon 23:54</span></div>' +
         '<div class="mini-menu"><div class="head"><span class="dot warn"></span>No credentials saved</div><hr><div class="dim">Log In Now</div><div>Settings…</div></div></div>' +
-      '</div>' + cap(3, "Confirm with your password or Touch ID. The Wi-Fi icon appears in the menu bar, and from now on it opens normally.") + '</figure>',
-    menu:
-      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi-alert"/></svg></span><span>Mon 23:54</span></div>' +
-        '<div class="mini-menu"><div class="head"><span class="dot warn"></span>No credentials saved</div><hr><div class="dim">Log In Now</div><div class="dim">Log Out</div><hr><div class="hl">Settings…</div><div>Open Log</div></div></div>' +
-      '</div>' + cap(1, "Click the Wi-Fi icon in the menu bar, then <b>Settings…</b>") + '</figure>' +
-      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector Settings") +
-        '<div class="mac-body form-mock"><label>Registration number<span class="field-mock">26BCE0000</span></label><label>Wi-Fi password<span class="field-mock">••••••••</span></label><span class="mock-btn blue hl" style="justify-self:end">Save</span></div>' +
-      '</div></div>' + cap(2, "Enter your registration number and Wi-Fi password, then <b>Save</b>. The password goes into your Keychain.") + '</figure>' +
-      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi"/></svg></span><span>Mon 23:54</span></div>' +
-        '<div class="mini-menu"><div class="head"><span class="dot warn"></span>Background agent not installed</div><hr><div class="hl">Install Background Agent</div><div>Settings…</div><div class="hl"><svg class="ico"><use href="#i-check"/></svg>Start at Login</div></div></div>' +
-      '</div>' + cap(3, "Click <b>Install Background Agent</b> and tick <b>Start at Login</b>. The menu then says Online.") + '</figure>'
+      '</div>' + cap(3, "Confirm with your password or Touch ID. WiFiConnector opens, and from now on it opens normally.") + '</figure>',
+    terminal:
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("Terminal") +
+        '<div class="term-mock"><span><span class="p">~ %</span> curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span>' +
+        '<span>==&gt; Downloading WiFiConnector…</span><span>==&gt; Copying WiFiConnector to /Applications…</span><span class="ok">==&gt; Installed WiFiConnector 0.3.0.</span></div>' +
+      '</div></div>' + cap(1, "Paste with <b>⌘V</b> and press <b>Return</b>. It takes a few seconds.") + '</figure>',
+    welcome:
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("Welcome to WiFiConnector") +
+        '<div class="mac-body form-mock"><label>Registration number<span class="field-mock">26BCE0000</span></label><label>Wi-Fi password<span class="field-mock">••••••••</span></label>' +
+        '<div class="steps-mock"><span><svg class="ico"><use href="#i-check"/></svg>Save your password in the Keychain</span><span><svg class="ico"><use href="#i-check"/></svg>Turn on automatic login</span><span><svg class="ico"><use href="#i-check"/></svg>Start WiFiConnector when your Mac starts</span></div>' +
+        '<span class="mock-btn blue hl" style="justify-self:end">Save and Turn On</span></div>' +
+      '</div></div>' + cap(1, "Enter your registration number and Wi-Fi password, then click <b>Save and Turn On</b>. That's the whole setup.") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray ring"><svg class="ico"><use href="#i-wifi"/></svg></span><span>Mon 23:54</span></div>' +
+        '<div class="mini-menu"><div class="head"><span class="dot"></span>Online</div><div class="dim">26BCE0000 · Logged in; internet is up</div><hr><div>Log In Now</div><div>Log Out</div></div></div>' +
+      '</div>' + cap(2, "Then it lives here, at the top right of the menu bar. Can't see it? The notch may be hiding it: quit an app with a menu-bar icon to make room.") + '</figure>'
   };
 
   /* Get started ------------------------------------------------------------ */
@@ -1580,13 +1609,18 @@ kbd.key {
       { t: "Save your details", p: "Your registration number, and your password straight into the Keychain.", c: "bin/wificonnector setup", s: "bin/wificonnector setup" },
       { t: "Turn it on", p: "Starts the background helper that logs you in from now on.", c: "bin/wificonnector install", s: "bin/wificonnector install" }
     ],
+    oneline: [
+      { t: "Open Terminal", p: "Press ⌘ Space, type Terminal and press Return.", note: "⌘ Space, then “Terminal”" },
+      { t: "Paste this command", p: "It downloads the app into Applications and opens it. Installed this way, macOS shows no security warning.", c: "curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash", s: "curl -fsSL …/install.sh | bash", visual: "terminal" },
+      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On.", note: "In the welcome window", visual: "welcome" }
+    ],
     app: [
       { t: "Download the app", p: "Open WiFiConnector.dmg and drag WiFiConnector onto Applications.", href: "https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg", s: "WiFiConnector.dmg", visual: "dmg" },
       { t: "Open it once", p: "macOS asks you to confirm an app without a paid Developer ID. In System Settings, go to Privacy & Security and click Open Anyway.", note: "In System Settings", visual: "gatekeeper" },
-      { t: "Finish in the menu", p: "Click the Wi-Fi icon. Choose Settings… to save your details, then Install Background Agent and Start at Login.", note: "In the menu bar", visual: "menu" }
+      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On.", note: "In the welcome window", visual: "welcome" }
     ]
   };
-  var setupList = $("setup"), setupMode = "app";
+  var setupList = $("setup"), setupMode = "oneline";
   function renderSetup() {
     var done = store("wc-steps-" + setupMode) || [];
     setupList.textContent = "";
@@ -1674,6 +1708,13 @@ kbd.key {
     if (!link || !window.goatcounter || !window.goatcounter.count) return;
     var place = link.closest(".hero") ? "hero" : link.closest("#get-started") ? "setup" : "section";
     window.goatcounter.count({ path: "download-" + place, title: "Download .dmg", event: true });
+  });
+  // Copying the install command counts the same way.
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest('[data-copy*="install.sh"]');
+    if (!button || !window.goatcounter || !window.goatcounter.count) return;
+    var place = button.closest(".hero") ? "hero" : button.closest("#get-started") ? "setup" : "section";
+    window.goatcounter.count({ path: "copy-install-" + place, title: "Copy install command", event: true });
   });
 })();
 </script>

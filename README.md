@@ -9,8 +9,8 @@ registration number and password every time. wificonnector notices the portal
 and logs you in, in the background, usually within a few seconds of
 connecting. It also logs you in again if the portal drops your session.
 
-It comes as a menu-bar app you download, or as a single bash script for
-Terminal; both use the same engine and the same launchd background agent. The
+It comes as a menu-bar app you install with one command, or as a single bash
+script for Terminal; both use the same engine and the same launchd background agent. The
 portal protocol comes from VinnovateIT's
 [Latch](https://github.com/vinnovateit/latch), which does the same job on
 Android, Windows and Linux.
@@ -30,10 +30,31 @@ installed and opened through Open Anyway on the same Mac.
 ## Requirements
 
 - The app: macOS 15 or later, on an Apple silicon or Intel Mac
-- The Terminal version: macOS 12 or later (everything it uses ships with macOS)
+- The script on its own: macOS 12 or later (everything it uses ships with macOS)
 - Your VIT registration number and hostel Wi-Fi password
 
 ## Install the app
+
+The easiest way: open Terminal (⌘ Space, type Terminal, press Return), paste
+this and press Return.
+
+```sh
+curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash
+```
+
+It downloads the latest release into Applications and opens it. Installed
+this way, macOS shows no security warning, because files curl downloads
+aren't marked as coming from the internet.
+[Read the installer](site/install.sh) before you run it if you like.
+
+The app opens a welcome window. Type your registration number and Wi-Fi
+password and click **Save and Turn On**. That saves the password in your
+Keychain, turns on the background agent, sets the app to start at login and
+logs you in. From then on it lives in the menu bar, at the top right. If you
+can't see its icon, the notch may be hiding it: quit an app with a menu-bar
+icon to make room.
+
+### Or download it yourself
 
 1. Download **WiFiConnector.dmg** from the
    [latest release](https://github.com/anujbajaj4/wificonnector/releases/latest)
@@ -45,13 +66,10 @@ installed and opened through Open Anyway on the same Mac.
 4. Open **System Settings ▸ Privacy & Security**, scroll down, and click
    **Open Anyway** next to WiFiConnector. You only do this once. The button
    shows for about an hour after the blocked launch; if it's gone, open the
-   app again first. Or skip Settings and run this in Terminal instead:
-   `xattr -dr com.apple.quarantine /Applications/WiFiConnector.app`
-5. Click the Wi-Fi icon in the menu bar. Choose **Settings…** to save your
-   registration number and password, then **Install Background Agent**, and
-   tick **Start at Login**.
+   app again first.
+5. Fill in the welcome window, as above.
 
-## Install with Terminal
+## Install only the script
 
 ```sh
 git clone https://github.com/anujbajaj4/wificonnector.git
@@ -116,7 +134,7 @@ again, so a wrong password can't get your account locked.
 
 | Key | Example | Meaning |
 |---|---|---|
-| `USERNAME` | `22BCE1234` | set by `setup` |
+| `USERNAME` | `26BCE0000` | set by `setup` |
 | `ALLOWED_SSIDS` | `MH-Block,LH-Block` | extra network names to accept besides those containing "VIT" |
 | `WIFI_DEVICE` | `en1` | override the Wi-Fi device if detection picks the wrong one |
 
@@ -138,7 +156,7 @@ again, so a wrong password can't get your account locked.
 ```sh
 tests/run-tests.sh                       # stub-based tests; run on macOS or Linux
 TEST_BASH=/bin/bash tests/run-tests.sh   # under macOS's bash 3.2 explicitly
-shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/*
+shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/* site/install.sh
 ```
 
 The tests replace `curl`, `security`, `ipconfig`, `networksetup`,

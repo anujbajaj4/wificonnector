@@ -11,7 +11,7 @@
 
 set -u
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 
 # launchd starts jobs with a minimal PATH; make sure the system tools resolve.
 export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin"

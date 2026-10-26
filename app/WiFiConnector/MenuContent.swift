@@ -35,7 +35,8 @@ struct MenuContent: View {
             Button("Update Background Agent") { model.installAgent() }
                 .disabled(model.busy)
         }
-        Button("Settings…") { openSettings() }
+        Button("Set Up…") { open("welcome") }
+        Button("Settings…") { open("settings") }
             .keyboardShortcut(",")
         Button("Open Log") { model.openLog() }
         Toggle("Start at Login", isOn: Binding(
@@ -51,8 +52,8 @@ struct MenuContent: View {
 
     /// A menu-bar app has no Dock icon and is never the active app on its own,
     /// so it has to bring itself forward or the window opens behind others.
-    private func openSettings() {
-        openWindow(id: "settings")
+    private func open(_ window: String) {
+        openWindow(id: window)
         NSApp.activate()
     }
 }

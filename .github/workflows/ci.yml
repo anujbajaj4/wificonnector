@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Lint
-        run: shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/* app/*.sh
+        run: shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/* app/*.sh site/install.sh
       - name: Test
         run: tests/run-tests.sh
 
@@ -32,6 +32,27 @@ jobs:
           TEST_BASH=/bin/bash /bin/bash tests/run-tests.sh
       - name: Build the app and disk image
         run: app/package.sh
+      - name: Install it with the one-line installer
+        # Piped into bash the way people run it, from the disk image just
+        # built, so the installer is tested against this commit's app.
+        run: |
+          apps="$RUNNER_TEMP/Applications"
+          WIFICONNECTOR_DMG_URL="file://$PWD/app/build/WiFiConnector.dmg" \
+            WIFICONNECTOR_APPS_DIR="$apps" WIFICONNECTOR_NO_OPEN=1 \
+            /bin/bash < site/install.sh
+          app="$apps/WiFiConnector.app"
+          codesign --verify --deep --strict "$app"
+          archs=$(lipo -archs "$app/Contents/MacOS/WiFiConnector")
+          echo "Architectures: $archs"
+          case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *) exit 1 ;; esac
+          if xattr -rl "$app" | grep -q com.apple.quarantine; then
+            echo "The installed app is quarantined"; exit 1
+          fi
+      - name: Install the latest release with the one-line installer
+        run: |
+          WIFICONNECTOR_APPS_DIR="$RUNNER_TEMP/Latest" WIFICONNECTOR_NO_OPEN=1 \
+            /bin/bash < site/install.sh
+          test -x "$RUNNER_TEMP/Latest/WiFiConnector.app/Contents/MacOS/WiFiConnector"
       - uses: actions/upload-artifact@v4
         with:
           name: WiFiConnector-dmg

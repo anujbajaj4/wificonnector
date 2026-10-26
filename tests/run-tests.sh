@@ -462,7 +462,7 @@ info_reports_state() {
     mkdir -p "$HOME/Library/Logs"
     printf '2026-10-25 23:54:40 Logged in; internet is up\n' > "$HOME/Library/Logs/wificonnector.log"
     wc_run info
-    check "version" grep -qx "version=0.2.0" "$SANDBOX/out"
+    check "version" grep -qx "version=$(sed -n 's/^VERSION="\(.*\)"$/\1/p' "$SCRIPT")" "$SANDBOX/out"
     check "state" grep -qx "state=online" "$SANDBOX/out"
     check "not paused" grep -qx "paused=no" "$SANDBOX/out"
     check "user" grep -qx "user=22BCE1234" "$SANDBOX/out"
