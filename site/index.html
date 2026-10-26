@@ -186,28 +186,11 @@ code, kbd, .mono { font-family: var(--font-mono); }
 .cmd .prompt { color: var(--blue); flex: none; }
 .cmd .ico { font-size: 17px; color: var(--ink-3); }
 .cmd.copied .ico { color: var(--ok); }
-.install { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; justify-items: start; min-width: 0; }
-.install-label { font-weight: 600; font-size: 15px; color: var(--ink-2); }
-.install small { font-size: 14px; color: var(--ink-3); }
-.install small a { color: inherit; }
-.cmd-main {
-  width: min(100%, 600px); min-height: 58px; padding: 0 8px 0 22px; justify-content: space-between;
-  background: var(--ink); color: #FFFFFF; font-size: 15px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow);
-}
-.cmd-main:hover { background: var(--ink-hover); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow); }
-.cmd-main .prompt { color: #7CC4FF; }
-.cmd-main .cmd-text { flex: 1; text-align: left; }
-.cmd-main .copy-tag {
-  display: inline-flex; align-items: center; gap: 6px; flex: none; overflow: visible;
-  padding: 10px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.14);
-  font: 600 14px/1 var(--font-body);
-}
-.cmd-main .copy-tag .ico { font-size: 15px; color: #FFFFFF; }
-.cmd-main.copied .copy-tag { background: var(--ok); }
-.alt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
-.alt-row .btn { min-height: 40px; padding: 0 16px; font-size: 15px; }
-.download .install, .download .alt-row { justify-items: center; justify-content: center; }
+.routes { display: flex; flex-wrap: wrap; gap: 10px; }
+.routes .tag { padding: 4px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); color: #FFFFFF; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
+.download .routes { justify-content: center; }
+.hero .routes { display: grid; grid-template-columns: 1fr 1fr; max-width: 460px; }
+.hero .routes .btn-primary { grid-column: 1 / -1; }
 
 /* Nav */
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-top: 14px; }
@@ -664,7 +647,6 @@ kbd.key {
 .app-tile { width: 88px; height: 88px; }
 .download .lead { max-width: 52ch; }
 .download .cta-row { justify-content: center; }
-.note { max-width: 60ch; font-size: 14.5px; color: var(--ink-3); }
 
 /* FAQ */
 .faq { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
@@ -700,7 +682,8 @@ kbd.key {
 
 @media (max-width: 700px) {
   body { font-size: 16px; }
-  .hero .cta-row .btn, .hero .cta-row .cmd, .download .cta-row .btn, .download .cta-row .cmd { width: 100%; justify-content: center; }
+  .routes .btn { width: 100%; }
+  .hero .routes { grid-template-columns: minmax(0, 1fr); max-width: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .nav, .menu, .settings-win, .toast, .nav-links { background: rgba(248, 249, 251, 0.96); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -797,7 +780,7 @@ kbd.key {
         <li><a href="#privacy">Privacy</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
-      <a class="btn btn-primary btn-small" href="#download">Install</a>
+      <a class="btn btn-primary btn-small" href="#get-started" data-route="oneline">Install</a>
       <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
         <svg class="ico"><use href="#i-menu"/></svg>
       </button>
@@ -812,20 +795,10 @@ kbd.key {
       <h1>Never log in to VIT Wi-Fi again.</h1>
       <div class="hero-side">
         <p class="lead">wificonnector spots the VIT Vellore hostel login page the moment your Mac joins the network and signs you in with your saved details. It sits in your menu bar and keeps you online.</p>
-        <div class="install">
-          <span class="install-label">Paste this in Terminal</span>
-          <button class="cmd cmd-main" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span class="cmd-text">curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><span class="copy-tag"><svg class="ico"><use href="#i-copy"/></svg>Copy</span></button>
-          <small>It installs the app and opens its setup window. No security warning, no admin password. <a href="#get-started">Step by step</a></small>
-        </div>
-        <div class="alt-row">
-          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:17px"><use href="#i-download"/></svg>
-            Or download the .dmg
-          </a>
-          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:17px"><use href="#i-github"/></svg>
-            Source on GitHub
-          </a>
+        <div class="routes">
+          <a class="btn btn-primary" href="#get-started" data-route="oneline">Install with Terminal <span class="tag">Recommended</span></a>
+          <a class="btn btn-quiet" href="#get-started" data-route="app">Download the .dmg</a>
+          <a class="btn btn-quiet" href="#get-started" data-route="terminal">Script only</a>
         </div>
         <p class="fine">Free and open source. Needs macOS 15 or later, on Apple silicon or Intel.</p>
       </div>
@@ -1091,22 +1064,11 @@ kbd.key {
         </svg>
         <h2 class="h2">Get wificonnector</h2>
         <p class="lead">For Macs running macOS 15 or later, on VIT hostel Wi-Fi.</p>
-        <div class="install">
-          <span class="install-label">Paste this in Terminal</span>
-          <button class="cmd cmd-main" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span class="cmd-text">curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><span class="copy-tag"><svg class="ico"><use href="#i-copy"/></svg>Copy</span></button>
-          <small>It installs the app and opens its setup window. No security warning, no admin password. <a href="#get-started">Step by step</a></small>
+        <div class="routes">
+          <a class="btn btn-primary" href="#get-started" data-route="oneline">Install with Terminal <span class="tag">Recommended</span></a>
+          <a class="btn btn-quiet" href="#get-started" data-route="app">Download the .dmg</a>
+          <a class="btn btn-quiet" href="#get-started" data-route="terminal">Script only</a>
         </div>
-        <div class="alt-row">
-          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:17px"><use href="#i-download"/></svg>
-            Or download the .dmg
-          </a>
-          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:17px"><use href="#i-github"/></svg>
-            Source on GitHub
-          </a>
-        </div>
-        <p class="note">Using the .dmg? The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
       </div>
     </div>
   </section>
@@ -1700,7 +1662,15 @@ kbd.key {
     $("setup-count").textContent = n + " of 3 done";
     $("setup-bar").style.width = (n / 3 * 100) + "%";
   }
-  segmented($("setup-tabs"), function (button) { setupMode = button.getAttribute("data-setup"); renderSetup(); });
+  var setupTabs = segmented($("setup-tabs"), function (button) { setupMode = button.getAttribute("data-setup"); renderSetup(); });
+  // The install options at the top and bottom of the page (and the nav's
+  // Install) open their tab here; the link itself does the scrolling.
+  document.querySelectorAll("[data-route]").forEach(function (link) {
+    link.addEventListener("click", function () {
+      var tab = document.querySelector('#setup-tabs [data-setup="' + link.getAttribute("data-route") + '"]');
+      if (tab) setupTabs.select(tab);
+    });
+  });
   renderSetup();
 
   /* Privacy diagram -------------------------------------------------------- */
@@ -1733,6 +1703,13 @@ kbd.key {
     if (!link || !window.goatcounter || !window.goatcounter.count) return;
     var place = link.closest(".hero") ? "hero" : link.closest("#get-started") ? "setup" : "section";
     window.goatcounter.count({ path: "download-" + place, title: "Download .dmg", event: true });
+  });
+  // So does each install option, by route and place.
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest("[data-route]");
+    if (!link || !window.goatcounter || !window.goatcounter.count) return;
+    var place = link.closest(".hero") ? "hero" : link.closest(".nav") ? "nav" : "section";
+    window.goatcounter.count({ path: "route-" + link.getAttribute("data-route") + "-" + place, title: "Install option", event: true });
   });
   // Copying the install command counts the same way.
   document.addEventListener("click", function (event) {
