@@ -27,7 +27,10 @@ fresh() {
     SANDBOX=$(mktemp -d "$BASE_TMP/wificonnector-test.XXXXXX")
     export HOME="$SANDBOX/home" TMPDIR="$SANDBOX/tmp" STUB_DIR="$SANDBOX/stub"
     mkdir -p "$HOME" "$TMPDIR" "$STUB_DIR"
-    export WIFICONNECTOR_REVALIDATE_DELAY=0 WIFICONNECTOR_IP_WAIT_DELAY=0
+    export WIFICONNECTOR_REVALIDATE_DELAY=0 WIFICONNECTOR_IP_WAIT_DELAY=0 WIFICONNECTOR_ROUTE_WAIT_DELAY=0
+    # As if run by the menu-bar app, with no terminal, even when the tests
+    # themselves run in one.
+    export WIFICONNECTOR_TERMINAL="$SANDBOX/no-terminal"
     STATE="$HOME/Library/Caches/wificonnector"
 }
 
@@ -277,6 +280,39 @@ no_route_to_portal_retries_via_gateway() {
     check "gateway address not logged" not grep -qF "172.18.0.1" "$SANDBOX/out"
 }
 
+route_returns_after_wake() {
+    # Just after waking, macOS has no default route for a moment. The script
+    # waits for it and logs in through the real portal, not the gateway.
+    with_credentials
+    behind_pronto
+    export STUB_ROUTE_AFTER=3
+    wc_run run
+    check "waited for the route" [ -f "$STUB_DIR/route_up" ]
+    check "logged in through the portal" \
+        grep -qxF "http://phc.prontonetworks.com/cgi-bin/authlogin?URI=http://example.com" "$STUB_DIR/login_urls"
+    check "never through the gateway" not grep -qF "172.18.0.1" "$STUB_DIR/login_urls"
+    check "state is online" [ "$(state)" = online ]
+}
+
+route_never_returns_uses_gateway() {
+    # If the route doesn't come back (say, a VPN kill switch), the gateway
+    # fallback still runs, after the wait.
+    with_credentials
+    export STUB_NO_ROUTE=1 WIFICONNECTOR_ROUTE_WAIT_ATTEMPTS=2
+    wc_run run
+    check "fell back to the gateway" \
+        grep -qxF "http://172.18.0.1/cgi-bin/authlogin?URI=http://example.com" "$STUB_DIR/login_urls"
+    check "state is online" [ "$(state)" = online ]
+}
+
+online_does_not_wait_for_route() {
+    # A working connection never looks for the route, so it never waits.
+    with_credentials
+    wc_run run
+    check "state is online" [ "$(state)" = online ]
+    check "default route never looked up" not grep -qs "get default" "$STUB_DIR/route_calls"
+}
+
 network_error_retries_once() {
     with_credentials
     behind_pronto
@@ -411,6 +447,13 @@ set_credentials_needs_a_password() {
     check "says why" grep -q "no password" "$SANDBOX/out"
 }
 
+set_credentials_refuses_a_terminal() {
+    printf 'secret\n' | WIFICONNECTOR_TERMINAL=/dev/null PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials 26BCE0000 > "$SANDBOX/out" 2>&1
+    check "fails" [ $? -ne 0 ]
+    check "saves nothing" [ "$(count "$STUB_DIR/security_calls")" = 0 ]
+    check "points to setup" grep -q "use 'wificonnector setup'" "$SANDBOX/out"
+}
+
 pause_and_resume() {
     with_credentials
     behind_pronto
@@ -429,7 +472,7 @@ info_reports_state() {
     mkdir -p "$HOME/Library/Logs"
     printf '2026-10-25 23:54:40 Logged in; internet is up\n' > "$HOME/Library/Logs/wificonnector.log"
     wc_run info
-    check "version" grep -qx "version=0.2.0" "$SANDBOX/out"
+    check "version" grep -qx "version=$(sed -n 's/^VERSION="\(.*\)"$/\1/p' "$SCRIPT")" "$SANDBOX/out"
     check "state" grep -qx "state=online" "$SANDBOX/out"
     check "not paused" grep -qx "paused=no" "$SANDBOX/out"
     check "user" grep -qx "user=22BCE1234" "$SANDBOX/out"
@@ -499,6 +542,9 @@ for t in \
     rejected_login_backs_off \
     dns_failure_retries_via_gateway \
     no_route_to_portal_retries_via_gateway \
+    route_returns_after_wake \
+    route_never_returns_uses_gateway \
+    online_does_not_wait_for_route \
     custom_dns_blocked_uses_network_dns \
     all_dns_blocked_uses_gateway_fingerprint \
     all_dns_blocked_foreign_gateway \
@@ -520,6 +566,7 @@ for t in \
     setup_saves_to_keychain \
     set_credentials_reads_stdin \
     set_credentials_needs_a_password \
+    set_credentials_refuses_a_terminal \
     pause_and_resume \
     info_reports_state \
     info_when_nothing_is_set_up \

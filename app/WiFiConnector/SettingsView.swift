@@ -14,7 +14,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                TextField("Registration number", text: $user, prompt: Text("22BCE1234"))
+                TextField("Registration number", text: $user, prompt: Text("26BCE0000"))
                 SecureField("Wi-Fi password", text: $password)
             } footer: {
                 Text("The password goes straight into your login Keychain.")
