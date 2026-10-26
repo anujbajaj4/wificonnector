@@ -12,6 +12,8 @@ portal protocol comes from VinnovateIT's
 [Latch](https://github.com/vinnovateit/latch), which does the same job on
 Android, Windows and Linux.
 
+**Website:** [anujbajaj4.github.io/wificonnector](https://anujbajaj4.github.io/wificonnector/)
+
 Want to know how it works, or build your own? Read
 [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 
@@ -147,6 +149,13 @@ shows whether you're online and lets you log in or out, pause auto-login and
 enter your credentials. To build it yourself, open
 `app/WiFiConnector.xcodeproj` in Xcode and press Run, or run `app/package.sh`
 to make the same `.dmg` the releases ship.
+
+### The website
+
+The site in [`site/`](site/) is published to GitHub Pages by the Website
+workflow whenever it changes on `main`. Its images (favicon, the link preview
+image) come from `app/tools/make_site_images.py`, which draws them from the
+app icon.
 
 ### Releasing
 

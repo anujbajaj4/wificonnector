@@ -8,3 +8,6 @@ app/build/
 
 # app/tools/make_icon.py preview
 app/tools/icon-preview.png
+
+# Python caches
+__pycache__/
