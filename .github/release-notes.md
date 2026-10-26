@@ -1,8 +1,8 @@
 Automatic login to VIT hostel Wi-Fi, from your Mac's menu bar. Needs macOS 15 or later; works on Apple silicon and Intel Macs.
 
-## What's new in 0.3.1
+## What's new in 0.3.2
 
-- **The welcome window now opens by itself** the first time you open the app. In 0.3.0 you had to choose **Set Up…** from the menu-bar icon.
+- **The welcome window opens by itself, in front.** It opens the first time you open the app, on top of Terminal or whatever else you're using. In 0.3.0 and 0.3.1 you could need **Set Up…** from the menu-bar icon.
 
 ## What's new in 0.3.0
 

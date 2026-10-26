@@ -27,10 +27,13 @@ final class WelcomeWindow {
             window.center()
             self.window = window
         }
-        window?.makeKeyAndOrderFront(nil)
-        // A menu-bar app isn't the active app on its own, so without this
-        // the window opens behind Terminal or the browser.
+        // Since macOS 14 an app can't make itself active while you're using
+        // another one, such as Terminal running the installer, so activate()
+        // alone can leave the window behind it. orderFrontRegardless puts it
+        // on top either way.
         NSApp.activate()
+        window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
 }
 
