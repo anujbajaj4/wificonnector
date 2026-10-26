@@ -30,6 +30,7 @@
   "name": "WiFiConnector",
   "description": "Stop typing your VIT hostel Wi-Fi password. wificonnector logs your Mac into VIT Vellore hostel Wi-Fi automatically, from the menu bar. Free and open source.",
   "url": "https://anujbajaj4.github.io/wificonnector/",
+  "installUrl": "https://anujbajaj4.github.io/wificonnector/#get-started",
   "downloadUrl": "https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg",
   "operatingSystem": "macOS 15 or later",
   "applicationCategory": "UtilitiesApplication",
@@ -185,10 +186,28 @@ code, kbd, .mono { font-family: var(--font-mono); }
 .cmd .prompt { color: var(--blue); flex: none; }
 .cmd .ico { font-size: 17px; color: var(--ink-3); }
 .cmd.copied .ico { color: var(--ok); }
-.install-line { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; justify-items: start; min-width: 0; margin-top: 18px; }
-.install-line .cmd { max-width: min(100%, 560px); min-width: 0; }
-.install-line small { font-size: 14px; color: var(--ink-3); }
-.download .install-line { justify-items: center; }
+.install { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; justify-items: start; min-width: 0; }
+.install-label { font-weight: 600; font-size: 15px; color: var(--ink-2); }
+.install small { font-size: 14px; color: var(--ink-3); }
+.install small a { color: inherit; }
+.cmd-main {
+  width: min(100%, 600px); min-height: 58px; padding: 0 8px 0 22px; justify-content: space-between;
+  background: var(--ink); color: #FFFFFF; font-size: 15px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow);
+}
+.cmd-main:hover { background: var(--ink-hover); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow); }
+.cmd-main .prompt { color: #7CC4FF; }
+.cmd-main .cmd-text { flex: 1; text-align: left; }
+.cmd-main .copy-tag {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; overflow: visible;
+  padding: 10px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.14);
+  font: 600 14px/1 var(--font-body);
+}
+.cmd-main .copy-tag .ico { font-size: 15px; color: #FFFFFF; }
+.cmd-main.copied .copy-tag { background: var(--ok); }
+.alt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
+.alt-row .btn { min-height: 40px; padding: 0 16px; font-size: 15px; }
+.download .install, .download .alt-row { justify-items: center; justify-content: center; }
 
 /* Nav */
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-top: 14px; }
@@ -778,7 +797,7 @@ kbd.key {
         <li><a href="#privacy">Privacy</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
-      <a class="btn btn-primary btn-small" href="#download">Download</a>
+      <a class="btn btn-primary btn-small" href="#download">Install</a>
       <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
         <svg class="ico"><use href="#i-menu"/></svg>
       </button>
@@ -793,19 +812,20 @@ kbd.key {
       <h1>Never log in to VIT Wi-Fi again.</h1>
       <div class="hero-side">
         <p class="lead">wificonnector spots the VIT Vellore hostel login page the moment your Mac joins the network and signs you in with your saved details. It sits in your menu bar and keeps you online.</p>
-        <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
-            Download for Mac
+        <div class="install">
+          <span class="install-label">Paste this in Terminal</span>
+          <button class="cmd cmd-main" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span class="cmd-text">curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><span class="copy-tag"><svg class="ico"><use href="#i-copy"/></svg>Copy</span></button>
+          <small>It installs the app and opens its setup window. No security warning, no admin password. <a href="#get-started">Step by step</a></small>
+        </div>
+        <div class="alt-row">
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:17px"><use href="#i-download"/></svg>
+            Or download the .dmg
           </a>
           <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            <svg class="ico" style="font-size:17px"><use href="#i-github"/></svg>
             Source on GitHub
           </a>
-        </div>
-        <div class="install-line">
-          <small>Or paste this in Terminal. No security warning, and the setup window opens by itself.</small>
-          <button class="cmd" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span>curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><svg class="ico"><use href="#i-copy"/></svg></button>
         </div>
         <p class="fine">Free and open source. Needs macOS 15 or later, on Apple silicon or Intel.</p>
       </div>
@@ -990,14 +1010,14 @@ kbd.key {
     <div class="wrap">
       <div class="chapter-head">
         <h2 class="h2">Set it up</h2>
-        <p class="lead">One command is the quickest way. You can also download the app yourself, or run only the script. Tick each step as you finish it.</p>
+        <p class="lead">One command in Terminal is the easiest way, and the one we recommend. You can also download the app yourself, or run only the script. Tick each step as you finish it.</p>
       </div>
       <div class="seg-scroll">
         <div class="segmented" id="setup-tabs" role="tablist" aria-label="Setup method">
           <span class="thumb" aria-hidden="true"></span>
-          <button type="button" role="tab" aria-selected="true" data-setup="oneline">One command (easiest)</button>
-          <button type="button" role="tab" aria-selected="false" data-setup="app">Download the app</button>
-          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Script only</button>
+          <button type="button" role="tab" aria-selected="true" data-setup="oneline">One command (recommended)</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="app">Download the .dmg</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Script only (advanced)</button>
         </div>
       </div>
       <ol class="setup" id="setup"></ol>
@@ -1071,21 +1091,22 @@ kbd.key {
         </svg>
         <h2 class="h2">Get wificonnector</h2>
         <p class="lead">For Macs running macOS 15 or later, on VIT hostel Wi-Fi.</p>
-        <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
-            Download for Mac
+        <div class="install">
+          <span class="install-label">Paste this in Terminal</span>
+          <button class="cmd cmd-main" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span class="cmd-text">curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><span class="copy-tag"><svg class="ico"><use href="#i-copy"/></svg>Copy</span></button>
+          <small>It installs the app and opens its setup window. No security warning, no admin password. <a href="#get-started">Step by step</a></small>
+        </div>
+        <div class="alt-row">
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:17px"><use href="#i-download"/></svg>
+            Or download the .dmg
           </a>
           <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
-            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            <svg class="ico" style="font-size:17px"><use href="#i-github"/></svg>
             Source on GitHub
           </a>
         </div>
-        <div class="install-line">
-          <small>Or paste this in Terminal. No security warning, and the setup window opens by itself.</small>
-          <button class="cmd" type="button" data-copy="curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash" aria-label="Copy the install command"><span class="prompt">$</span><span>curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span><svg class="ico"><use href="#i-copy"/></svg></button>
-        </div>
-        <p class="note">Downloaded the .dmg instead? The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
+        <p class="note">Using the .dmg? The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
       </div>
     </div>
   </section>
@@ -1103,6 +1124,10 @@ kbd.key {
           <p>No. It's an independent, open-source project. It does what you'd do in the browser: fill in the hostel login page for you.</p>
         </details>
         <details name="faq">
+          <summary>Is it safe to paste a command into Terminal?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>It's a fair question to ask of any command. This one downloads the latest release from GitHub, copies the app into Applications and opens it. It never asks for your Mac password and changes nothing outside the app. You can <a href="https://anujbajaj4.github.io/wificonnector/install.sh" target="_blank" rel="noopener">read the installer</a> before you run it, and the rest of the code is <a href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">on GitHub</a>.</p>
+        </details>
+        <details name="faq">
           <summary>Does it work in the academic blocks?<svg class="ico"><use href="#i-plus"/></svg></summary>
           <p>Not yet. The academic blocks use a different login page. Support for it is planned.</p>
         </details>
@@ -1112,7 +1137,7 @@ kbd.key {
         </details>
         <details name="faq">
           <summary>Why does macOS say it can't verify the app?<svg class="ico"><use href="#i-plus"/></svg></summary>
-          <p>Apple only vouches for apps signed with a paid Developer ID, and this free app isn't. macOS warns about apps your browser downloaded, so install with the one-line command instead and you never see it. Already downloaded the .dmg? Click Done, not Move to Trash. Then open System Settings, go to Privacy &amp; Security and click Open Anyway once. The code is public, so you can check what it does first.</p>
+          <p>Apple only vouches for apps signed with a paid Developer ID, and this free app isn't. macOS warns about apps your browser downloaded; install with the Terminal command and you never see it. Already downloaded the .dmg? Click Done, not Move to Trash. Then open System Settings, go to Privacy &amp; Security and click Open Anyway once. The code is public, so you can check what it does first.</p>
         </details>
         <details name="faq">
           <summary>I can't find the icon. Where is it?<svg class="ico"><use href="#i-plus"/></svg></summary>
@@ -1569,7 +1594,7 @@ kbd.key {
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Downloads") +
         '<div class="mac-body"><div class="list-head">Today</div><div class="file-row hl">' + DISK + 'WiFiConnector.dmg<small>429 KB</small></div></div>' +
       '</div></div>' + cap(1, "<b>Open WiFiConnector.dmg</b> from your Downloads.") + '</figure>' +
-      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.3.0") +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.3.2") +
         '<div class="dmg-body"><div class="dmg-item">' + APP_TILE + 'WiFiConnector</div>' +
         '<svg class="dmg-arrow" viewBox="0 0 70 34" aria-hidden="true"><path d="M4 26C20 4 46 4 62 22" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M54 21l9 2-2-9" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '<div class="dmg-item hl">' + FOLDER + 'Applications</div></div>' +
@@ -1589,7 +1614,7 @@ kbd.key {
     terminal:
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Terminal") +
         '<div class="term-mock"><span><span class="p">~ %</span> curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span>' +
-        '<span>==&gt; Downloading WiFiConnector…</span><span>==&gt; Copying WiFiConnector to /Applications…</span><span class="ok">==&gt; Installed WiFiConnector 0.3.0.</span></div>' +
+        '<span>==&gt; Downloading WiFiConnector…</span><span>==&gt; Copying WiFiConnector to /Applications…</span><span class="ok">==&gt; Installed WiFiConnector 0.3.2.</span></div>' +
       '</div></div>' + cap(1, "Paste with <b>⌘V</b> and press <b>Return</b>. It takes a few seconds.") + '</figure>',
     welcome:
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Welcome to WiFiConnector") +
@@ -1612,12 +1637,12 @@ kbd.key {
     oneline: [
       { t: "Open Terminal", p: "Press ⌘ Space, type Terminal and press Return.", note: "⌘ Space, then “Terminal”" },
       { t: "Paste this command", p: "It downloads the app into Applications and opens it. Installed this way, macOS shows no security warning.", c: "curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash", s: "curl -fsSL …/install.sh | bash", visual: "terminal" },
-      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On.", note: "In the welcome window", visual: "welcome" }
+      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On. No window? Click the Wi-Fi icon in the menu bar and choose Set Up….", note: "In the welcome window", visual: "welcome" }
     ],
     app: [
       { t: "Download the app", p: "Open WiFiConnector.dmg and drag WiFiConnector onto Applications.", href: "https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg", s: "WiFiConnector.dmg", visual: "dmg" },
       { t: "Open it once", p: "macOS asks you to confirm an app without a paid Developer ID. In System Settings, go to Privacy & Security and click Open Anyway.", note: "In System Settings", visual: "gatekeeper" },
-      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On.", note: "In the welcome window", visual: "welcome" }
+      { t: "Fill in the welcome window", p: "It opens by itself. Enter your registration number and Wi-Fi password and click Save and Turn On. No window? Click the Wi-Fi icon in the menu bar and choose Set Up….", note: "In the welcome window", visual: "welcome" }
     ]
   };
   var setupList = $("setup"), setupMode = "oneline";

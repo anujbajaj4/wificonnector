@@ -9,11 +9,11 @@ registration number and password every time. wificonnector notices the portal
 and logs you in, in the background, usually within a few seconds of
 connecting. It also logs you in again if the portal drops your session.
 
-It comes as a menu-bar app you install with one command, or as a single bash
-script for Terminal; both use the same engine and the same launchd background agent. The
-portal protocol comes from VinnovateIT's
-[Latch](https://github.com/vinnovateit/latch), which does the same job on
-Android, Windows and Linux.
+It's a menu-bar app you install with one command in Terminal (or from a
+`.dmg`), or a single bash script if you'd rather skip the app. Both use the
+same engine and the same launchd background agent. The portal protocol comes
+from VinnovateIT's [Latch](https://github.com/vinnovateit/latch), which does
+the same job on Android, Windows and Linux.
 
 **Website:** [anujbajaj4.github.io/wificonnector](https://anujbajaj4.github.io/wificonnector/)
 
@@ -23,9 +23,9 @@ Want to know how it works, or build your own? Read
 ## Tested on
 
 A MacBook Air running macOS 27 on VIT Vellore hostel Wi-Fi: manual login,
-logout, automatic re-login by the background agent, and all of these with
-Cloudflare's 1.1.1.1 app switched on. The v0.2.0 `.dmg` was downloaded,
-installed and opened through Open Anyway on the same Mac.
+logout and automatic re-login by the background agent, also with Cloudflare's
+1.1.1.1 app switched on. v0.3.2 was installed with the one-line command and
+set up in its welcome window on the same Mac.
 
 ## Requirements
 
@@ -35,8 +35,8 @@ installed and opened through Open Anyway on the same Mac.
 
 ## Install the app
 
-The easiest way: open Terminal (⌘ Space, type Terminal, press Return), paste
-this and press Return.
+Open Terminal (⌘ Space, type Terminal, press Return), paste this and press
+Return:
 
 ```sh
 curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash
@@ -47,14 +47,15 @@ this way, macOS shows no security warning, because files curl downloads
 aren't marked as coming from the internet.
 [Read the installer](site/install.sh) before you run it if you like.
 
-The app opens a welcome window. Type your registration number and Wi-Fi
+The app opens a welcome window (if you don't see it, click the Wi-Fi icon in
+the menu bar and choose **Set Up…**). Type your registration number and Wi-Fi
 password and click **Save and Turn On**. That saves the password in your
 Keychain, turns on the background agent, sets the app to start at login and
 logs you in. From then on it lives in the menu bar, at the top right. If you
 can't see its icon, the notch may be hiding it: quit an app with a menu-bar
 icon to make room.
 
-### Or download it yourself
+### Or download the .dmg
 
 1. Download **WiFiConnector.dmg** from the
    [latest release](https://github.com/anujbajaj4/wificonnector/releases/latest)
