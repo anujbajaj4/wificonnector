@@ -9,7 +9,14 @@ inside the app, still does all the logging in, and the background agent it
 installs keeps working with the app closed. Later versions move that work into
 Swift one piece at a time (see [Roadmap](#roadmap)).
 
-## Run it
+## Download it
+
+Most people should get the ready-made app: download **WiFiConnector.dmg**
+from the [latest release](https://github.com/anujbajaj4/wificonnector/releases/latest)
+and follow the install steps in the [main README](../README.md#install-the-app).
+The rest of this page is for building and changing it.
+
+## Run it from Xcode
 
 You need macOS 15 or later and Xcode 16 or later.
 
@@ -26,6 +33,10 @@ You need macOS 15 or later and Xcode 16 or later.
 To keep the app, drag it from Xcode's **Product ▸ Show Build Folder in
 Finder** (`Products/Debug/WiFiConnector.app`) into **Applications**, open it
 from there, and tick **Start at Login** in its menu.
+
+**To make the downloadable disk image**, run `app/package.sh`. It builds a
+universal Release app, signs it ad hoc and writes `app/build/WiFiConnector.dmg`.
+The Release workflow runs the same script.
 
 **If the project won't open or build**, run `app/build-app.sh` in Terminal.
 It builds the same app without the project file, into
