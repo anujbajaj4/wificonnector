@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>wificonnector: automatic VIT hostel Wi-Fi login for Mac</title>
+<meta name="description" content="Stop typing your VIT hostel Wi-Fi password. wificonnector logs your Mac into VIT Vellore hostel Wi-Fi automatically, from the menu bar. Free and open source.">
+<link rel="canonical" href="https://anujbajaj4.github.io/wificonnector/">
+<meta name="theme-color" content="#F4F5F7">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- What WhatsApp, Instagram, X and search results show for a shared link. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="wificonnector">
+<meta property="og:title" content="Never log in to VIT Wi-Fi again">
+<meta property="og:description" content="Automatic VIT hostel Wi-Fi login for Mac. Free and open source.">
+<meta property="og:url" content="https://anujbajaj4.github.io/wificonnector/">
+<meta property="og:image" content="https://anujbajaj4.github.io/wificonnector/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The wificonnector app icon next to the words: Never log in to VIT Wi-Fi again.">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Tells search engines this is a free macOS app and where to download it. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "WiFiConnector",
+  "description": "Stop typing your VIT hostel Wi-Fi password. wificonnector logs your Mac into VIT Vellore hostel Wi-Fi automatically, from the menu bar. Free and open source.",
+  "url": "https://anujbajaj4.github.io/wificonnector/",
+  "downloadUrl": "https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg",
+  "operatingSystem": "macOS 15 or later",
+  "applicationCategory": "UtilitiesApplication",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "codeRepository": "https://github.com/anujbajaj4/wificonnector"
+}
+</script>
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+/* Layout: a floating glass nav over cool paper; a split hero above a working
+   menu-bar playground, the one loud element. Sections open with a left-aligned
+   heading and its intro beside it, then one interactive piece. Light-only. */
+:root {
+  --paper: #F4F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --sidebar: #EEF0F4;
+  --ink: #16181D;
+  --ink-hover: #2A2E37;
+  --ink-2: #555B67;
+  --ink-3: #868C98;
+  --line: rgba(22, 24, 29, 0.10);
+  --line-2: rgba(22, 24, 29, 0.16);
+  --quiet: rgba(22, 24, 29, 0.06);
+  --blue: #0A7AFF;
+  --blue-soft: rgba(10, 122, 255, 0.10);
+  --blue-ring: rgba(10, 122, 255, 0.18);
+  --night: #16142A;
+  --night-2: #201D3A;
+  --night-ink: #E9E7F7;
+  --night-dim: rgba(236, 234, 250, 0.60);
+  --night-ok: #7EE2A8;
+  --night-bad: #FF9A9E;
+  --ok: #12813A;
+  --ok-soft: rgba(18, 129, 58, 0.10);
+  --red: #E5484D;
+  --red-soft: rgba(229, 72, 77, 0.10);
+  --tl-red: #FF5F57;
+  --tl-yellow: #FEBC2E;
+  --tl-green: #28C840;
+  --glass: rgba(250, 250, 252, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --wall-1: #DCE5F7;
+  --wall-2: #EEF1F6;
+  --wall-3: #E5E0F6;
+  --shadow: 0 1px 2px rgba(20, 30, 50, 0.08), 0 12px 30px -12px rgba(20, 30, 50, 0.28);
+  --shadow-glass: inset 0 1px 0.5px rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(255, 255, 255, 0.3), 0 1px 2px rgba(20, 30, 50, 0.08), 0 12px 30px -12px rgba(20, 30, 50, 0.28);
+  --shadow-screen: 0 0 0 1px rgba(22, 24, 29, 0.08), 0 50px 90px -50px rgba(22, 20, 50, 0.6), 0 18px 36px -20px rgba(22, 20, 50, 0.35);
+
+  /* The page sells a Mac utility, so it speaks in the Mac's own type: SF Pro
+     Rounded for display, SF Pro for text, SF Mono for commands. */
+  --font-display: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-xl: 32px;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+  --max: 1180px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--paper);
+}
+::selection { background: var(--blue-ring); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--ink); }
+p { margin: 0; text-wrap: pretty; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+code, kbd, .mono { font-family: var(--font-mono); }
+:focus-visible { outline: 3px solid rgba(10, 122, 255, 0.55); outline-offset: 3px; border-radius: 8px; }
+
+.wrap {
+  width: 100%;
+  max-width: calc(var(--max) + 80px);
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 700px) {
+  .wrap { padding-left: max(40px, env(safe-area-inset-left, 0px)); padding-right: max(40px, env(safe-area-inset-right, 0px)); }
+}
+.section { padding-block: 0 clamp(80px, 11vw, 150px); }
+.h2 { font-size: clamp(2rem, 4.2vw, 3.25rem); font-weight: 800; line-height: 1.06; letter-spacing: -0.02em; }
+.lead { font-size: clamp(1.1rem, 1.6vw, 1.3rem); color: var(--ink-2); line-height: 1.5; }
+.muted { color: var(--ink-2); }
+.chapter-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px clamp(28px, 5vw, 72px); align-items: end;
+  margin-bottom: clamp(32px, 4.5vw, 52px);
+}
+.chapter-head .lead { max-width: 52ch; }
+@media (max-width: 900px) { .chapter-head { grid-template-columns: minmax(0, 1fr); } }
+
+
+.ico { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0;
+  font: 600 16px/1 var(--font-body); text-decoration: none; cursor: pointer;
+  transition: transform 0.15s var(--ease), background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--ink); color: #FFFFFF; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow); }
+.btn-primary:hover { background: var(--ink-hover); }
+.btn-quiet { background: var(--quiet); color: var(--ink); }
+.btn-quiet:hover { background: var(--line); }
+.btn-blue { background: var(--blue); color: #FFFFFF; }
+.btn-blue:hover { background: #2B8CFF; }
+.btn-small { min-height: 38px; padding: 0 16px; font-size: 15px; }
+.cmd {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; max-width: 100%;
+  padding: 0 16px 0 18px; border-radius: 999px; border: 0;
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+  font: 500 14px/1.2 var(--font-mono); cursor: pointer;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s ease;
+}
+.cmd:hover { box-shadow: 0 0 0 1px var(--line-2), var(--shadow); }
+.cmd:active { transform: scale(0.97); }
+.cmd span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cmd .prompt { color: var(--blue); flex: none; }
+.cmd .ico { font-size: 17px; color: var(--ink-3); }
+.cmd.copied .ico { color: var(--ok); }
+
+/* Nav */
+.site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-top: 14px; }
+.nav {
+  position: relative; display: flex; align-items: center; gap: 16px;
+  padding: 8px 8px 8px 16px; border-radius: 999px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--shadow-glass), 0 0 0 1px var(--line);
+}
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 700 18px/1 var(--font-display); letter-spacing: -0.01em; }
+.brand svg { width: 30px; height: 30px; }
+.nav-links { display: flex; gap: 2px; margin: 0 auto; padding: 0; list-style: none; }
+.nav-links a {
+  display: block; padding: 8px 12px; border-radius: 999px;
+  color: var(--ink-2); font-weight: 600; font-size: 15px; text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nav-links a:hover { background: var(--quiet); color: var(--ink); }
+.nav-links a[aria-current="true"] { background: var(--blue-soft); color: var(--blue); }
+.nav-toggle { display: none; }
+@media (max-width: 860px) {
+  .nav-links {
+    position: absolute; top: calc(100% + 10px); left: 0; right: 0;
+    flex-direction: column; gap: 2px; padding: 10px;
+    border-radius: var(--radius-lg); background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: 0 0 0 1px var(--line), var(--shadow);
+    transform-origin: top center;
+    animation: drop 0.25s var(--ease);
+  }
+  .nav-links:not(.open) { display: none; }
+  .nav-links a { padding: 12px 14px; border-radius: var(--radius-md); font-size: 16px; }
+  .nav .btn-small { margin-left: auto; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border: 0; border-radius: 999px;
+    background: var(--quiet); cursor: pointer;
+  }
+  .nav-toggle .ico { font-size: 20px; }
+}
+@keyframes drop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } }
+
+/* Hero */
+.hero { padding-top: clamp(48px, 8vw, 100px); padding-bottom: clamp(70px, 10vw, 130px); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: end; }
+.hero h1 { font-size: clamp(2.6rem, 6.4vw, 5rem); font-weight: 800; line-height: 0.98; letter-spacing: -0.035em; }
+.hero-side { display: grid; gap: 22px; min-width: 0; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.fine { font-size: 14px; color: var(--ink-3); }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr); align-items: start; } }
+
+/* Playground scene */
+.scene {
+  position: relative; margin: clamp(40px, 6vw, 72px) 0 0;
+  border-radius: var(--radius-xl); overflow: hidden;
+  background:
+    radial-gradient(90% 80% at 90% 0%, var(--wall-3), transparent 60%),
+    radial-gradient(80% 90% at 0% 100%, var(--wall-1), transparent 60%),
+    var(--wall-2);
+  box-shadow: var(--shadow-screen);
+}
+.menubar {
+  position: relative; z-index: 3;
+  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+  height: 36px; padding: 0 16px;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 var(--line);
+  font: 600 13px/1 var(--font-body);
+}
+.menubar .left { margin-right: auto; display: flex; gap: 18px; color: var(--ink-2); font-weight: 500; }
+.menubar .left b { color: var(--ink); font-weight: 700; }
+.mb-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 26px; border: 0; border-radius: 7px;
+  background: transparent; font-size: 17px; cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.3s ease, transform 0.3s var(--spring);
+}
+.mb-icon:hover, .mb-icon[aria-expanded="true"] { background: var(--line-2); }
+.mb-icon.busy .ico { animation: spin 0.9s linear infinite; }
+.mb-icon.gone { opacity: 0; transform: scale(0.4); pointer-events: none; }
+.mb-icon.pop { animation: pop 0.45s var(--spring); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pop { 40% { transform: scale(1.25); } }
+.battery { width: 24px; height: 12px; border-radius: 3px; box-shadow: 0 0 0 1.5px var(--ink); position: relative; opacity: 0.75; }
+.battery::after { content: ""; position: absolute; inset: 2px 7px 2px 2px; border-radius: 1px; background: var(--ink); }
+.scene-body {
+  position: relative;
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 40px); align-items: start;
+  padding: clamp(18px, 3vw, 36px); padding-top: 10px; min-height: 430px;
+}
+.scene-tools { position: absolute; left: clamp(18px, 3vw, 36px); top: 20px; display: flex; flex-wrap: wrap; gap: 8px; z-index: 2; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 14px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--glass-strong); box-shadow: 0 0 0 1px var(--line), 0 6px 16px -10px rgba(20, 30, 50, 0.4);
+  font-weight: 600; font-size: 13.5px;
+  transition: transform 0.15s var(--ease), background-color 0.15s ease;
+}
+.chip:hover { background: #FFFFFF; }
+.chip:active { transform: scale(0.95); }
+.chip .ico { font-size: 15px; color: var(--blue); }
+.chip:disabled { opacity: 0.5; cursor: default; }
+.logwin {
+  align-self: end; min-width: 0; border-radius: var(--radius-lg);
+  background: var(--night); color: var(--night-ink);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), var(--shadow-screen);
+  overflow: hidden; transition: box-shadow 0.3s ease, transform 0.3s var(--spring);
+}
+.logwin.flash { box-shadow: 0 0 0 3px var(--blue), var(--shadow-screen); transform: translateY(-4px); }
+.winbar {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+  background: var(--night-2); font: 500 12px/1 var(--font-mono); color: var(--night-dim);
+}
+.lights { display: flex; gap: 7px; margin-right: 6px; }
+.lights i { width: 11px; height: 11px; border-radius: 50%; background: var(--tl-red); }
+.lights i:nth-child(2) { background: var(--tl-yellow); }
+.lights i:nth-child(3) { background: var(--tl-green); }
+.log { height: 214px; margin: 0; padding: 14px 18px 18px; overflow-y: auto; font: 400 13px/1.75 var(--font-mono); scroll-behavior: smooth; }
+.log-line { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; animation: logIn 0.35s var(--ease); }
+.log-line time { color: var(--night-dim); font-variant-numeric: tabular-nums; }
+.log-line.ok span { color: var(--night-ok); }
+.log-line.bad span { color: var(--night-bad); }
+@keyframes logIn { from { opacity: 0; transform: translateY(6px); } }
+.menu {
+  justify-self: end; width: min(100%, 300px); margin-right: clamp(0px, 5vw, 60px);
+  padding: 6px; border-radius: 12px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 0 0 1px var(--line-2), var(--shadow-screen);
+  font-size: 14px; line-height: 1.3; transform-origin: top right;
+  transition: opacity 0.2s ease, transform 0.25s var(--ease);
+}
+.menu.closed { opacity: 0; transform: translateY(-8px) scale(0.96); pointer-events: none; }
+.menu-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 10px; border: 0; border-radius: 6px; background: none;
+  text-align: left; font-size: 14px; cursor: default;
+}
+button.menu-item { cursor: pointer; }
+button.menu-item:hover:not(:disabled), button.menu-item:focus-visible { background: var(--blue); color: #FFFFFF; outline: none; }
+button.menu-item:disabled { color: var(--ink-3); cursor: default; }
+.menu-item.head { font-weight: 700; }
+.menu-item.head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; transition: background-color 0.3s ease; }
+.menu-item.head .dot.warn { background: var(--tl-yellow); }
+.menu-item.head .dot.off { background: var(--ink-3); }
+.menu-item.head .dot.busy { background: var(--blue); animation: pulse 1s ease infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.menu-item.dim { color: var(--ink-3); font-size: 13px; }
+.menu-item kbd { margin-left: auto; font: 500 12px/1 var(--font-body); opacity: 0.55; }
+.menu-item .check { width: 13px; height: 13px; visibility: hidden; }
+.menu-item .check.on { visibility: visible; }
+.menu-sep { height: 1px; margin: 5px 10px; background: var(--line-2); }
+.relaunch { position: absolute; right: clamp(18px, 3vw, 36px); top: 20px; }
+/* Demo settings window */
+.settings-win {
+  position: absolute; z-index: 4; left: 50%; top: 50%;
+  width: min(92%, 380px); border-radius: 16px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 0 0 1px var(--line-2), var(--shadow-screen);
+  transform: translate(-50%, -50%);
+  animation: winIn 0.3s var(--spring);
+}
+@keyframes winIn { from { opacity: 0; transform: translate(-50%, -46%) scale(0.95); } }
+.settings-win .winbar { background: transparent; color: var(--ink-2); font-family: var(--font-body); font-weight: 600; justify-content: flex-start; }
+.settings-body { display: grid; gap: 12px; padding: 4px 18px 18px; }
+.field { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: center; gap: 12px; font-size: 14px; }
+.field label, .field .label { color: var(--ink-2); }
+.field input, .field .fake-input {
+  min-width: 0; height: 32px; padding: 0 10px; border-radius: 7px; border: 0;
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line-2);
+  font: 500 14px/32px var(--font-body); color: var(--ink);
+}
+.field input:focus { outline: 3px solid rgba(10, 122, 255, 0.55); outline-offset: 0; }
+.fake-input { color: var(--ink-3) !important; letter-spacing: 0.15em; }
+.settings-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-foot small { color: var(--ink-3); font-size: 12.5px; }
+.settings-foot .btns { display: flex; gap: 8px; }
+.settings-foot .btn { min-height: 32px; padding: 0 14px; font-size: 14px; }
+@media (max-width: 900px) {
+  .scene-body { grid-template-columns: minmax(0, 1fr); padding-top: 70px; }
+  .menu { justify-self: stretch; width: auto; margin-right: 0; order: -1; }
+  .menubar .left { display: none; }
+  .field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+
+/* Segmented control */
+.segmented {
+  position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  max-width: 100%; padding: 4px; border-radius: 999px;
+  background: var(--quiet); box-shadow: inset 0 0 0 1px var(--line);
+}
+.segmented button {
+  position: relative; z-index: 1; min-height: 40px; padding: 0 18px;
+  border: 0; border-radius: 999px; background: none; cursor: pointer;
+  font-weight: 600; font-size: 15px; color: var(--ink-2); white-space: nowrap;
+  transition: color 0.2s ease;
+}
+.segmented button[aria-selected="true"] { color: var(--ink); }
+.segmented .thumb {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0;
+  border-radius: 999px; background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(20, 30, 50, 0.12), 0 4px 12px -4px rgba(20, 30, 50, 0.25);
+  transition: left 0.35s var(--spring), width 0.35s var(--spring);
+}
+.seg-scroll { display: flex; justify-content: flex-start; overflow-x: auto; padding: 2px; margin-bottom: 26px; }
+
+/* Scenario simulator */
+/* The four stages share one surface; the 1px gap over a line-colored
+   background draws the dividers at any column count. */
+.flow {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px;
+  margin: 0; padding: 0; list-style: none;
+  border-radius: 20px 20px 0 0; overflow: hidden;
+  background: var(--line); box-shadow: 0 0 0 1px var(--line);
+}
+.step {
+  position: relative; display: grid; gap: 10px; align-content: start; min-width: 0;
+  padding: 22px; background: var(--surface);
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+.step-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.step-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--quiet); color: var(--ink-2); font: 700 14px/1 var(--font-display);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.badge { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--quiet); color: var(--ink-3); }
+.step h3 { font-size: 1.1rem; font-weight: 700; }
+.step code {
+  display: block; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 12.5px; line-height: 1.5; overflow-x: auto; white-space: nowrap;
+}
+.step p { font-size: 15px; color: var(--ink-2); }
+.step.active { background: #F2F7FF; }
+.step.active::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--blue); }
+.step.active .step-n { background: var(--blue); color: #FFFFFF; }
+.step.ok .step-n { background: var(--ok-soft); color: var(--ok); }
+.step.ok .badge { background: var(--ok-soft); color: var(--ok); }
+.step.fail .step-n { background: var(--red-soft); color: var(--red); }
+.step.fail .badge { background: var(--red-soft); color: var(--red); }
+.step.skip { opacity: 0.55; }
+.step.waiting .badge { visibility: hidden; }
+.outcome {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 16px 20px; border-radius: 0 0 20px 20px;
+  background: var(--night); color: var(--night-ink);
+  font: 500 14px/1.5 var(--font-mono);
+}
+.outcome .result { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.outcome .result .ico { font-size: 18px; }
+.outcome .result b { font-family: var(--font-body); font-size: 15px; }
+.outcome .result.ok b { color: var(--night-ok); }
+.outcome .result.bad b { color: var(--night-bad); }
+.outcome .btn { min-height: 38px; }
+@media (max-width: 1080px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+
+/* Interval explorer */
+.interval {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px);
+  padding: clamp(22px, 4vw, 40px); border-radius: var(--radius-xl);
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+}
+.interval-controls { display: grid; gap: 22px; align-content: start; min-width: 0; }
+.interval-value { font: 800 clamp(3rem, 7vw, 4.8rem)/1 var(--font-display); letter-spacing: -0.03em; }
+.interval-value small { font-size: 0.4em; color: var(--ink-3); letter-spacing: 0; margin-left: 6px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; width: max-content; padding: 5px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--blue-soft); color: var(--blue); transition: opacity 0.2s ease; }
+.tag.hidden { opacity: 0; }
+input[type="range"] { width: 100%; accent-color: var(--blue); }
+.range-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; margin-top: -10px; }
+.timeline { position: relative; height: 54px; border-radius: 12px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.timeline i { position: absolute; top: 12px; bottom: 12px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--blue); animation: tickIn 0.4s var(--spring) backwards; }
+.timeline span { position: absolute; bottom: 4px; font-size: 10.5px; color: var(--ink-3); transform: translateX(-50%); }
+@keyframes tickIn { from { transform: scaleY(0); } }
+.timeline-caption { font-size: 13.5px; color: var(--ink-3); }
+.stats { display: grid; gap: 12px; align-content: start; margin: 0; }
+.stat { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.stat dt { color: var(--ink-2); font-size: 15px; }
+.stat dd { margin: 0; font: 700 1.4rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.interval-note { font-size: 15px; color: var(--ink-2); padding: 14px 16px; border-radius: var(--radius-md); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+@media (max-width: 900px) { .interval { grid-template-columns: minmax(0, 1fr); } }
+
+/* Split sections */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
+@media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.split-text { display: grid; gap: 18px; }
+.split-text ul { margin: 6px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
+.split-text li { padding: 12px 0; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+
+/* Keychain card */
+.keychain {
+  border-radius: var(--radius-lg); background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-screen); overflow: hidden;
+  transition: transform 0.4s var(--spring);
+}
+.keychain-top { display: flex; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.key-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); font-size: 22px; }
+.keychain-top strong { display: block; font-family: var(--font-display); font-size: 1.1rem; }
+.keychain-top span { color: var(--ink-3); font-size: 14px; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; padding: 8px 22px 18px; }
+.kv dt, .kv dd { margin: 0; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.kv dt { padding-right: 24px; color: var(--ink-3); }
+.kv dd { font-family: var(--font-mono); font-size: 13.5px; overflow-wrap: anywhere; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.kv dt:last-of-type, .kv dd:last-of-type { border-bottom: 0; }
+.reveal-pw { border: 0; background: var(--quiet); border-radius: 999px; padding: 4px 10px; font: 600 12px/1.2 var(--font-body); cursor: pointer; }
+.reveal-pw:hover { background: var(--line); }
+.locked { color: var(--red); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+
+/* Legend */
+.legend-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: clamp(24px, 4vw, 48px); align-items: center; }
+.legend { display: grid; gap: 8px; }
+.legend button {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 14px;
+  padding: 12px 14px; border: 0; border-radius: var(--radius-md); background: transparent;
+  text-align: left; cursor: pointer; transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.legend button:hover { background: var(--quiet); }
+.legend button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.legend .glyph { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 36px; border-radius: 9px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); font-size: 21px; }
+.legend button[aria-pressed="true"] .glyph { background: var(--blue-soft); color: var(--blue); box-shadow: none; }
+.legend strong { display: block; font-family: var(--font-display); font-size: 1rem; }
+.legend small { color: var(--ink-2); font-size: 14px; }
+.mini-screen { border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-screen); background: radial-gradient(90% 80% at 100% 0%, var(--wall-3), transparent 60%), var(--wall-2); }
+.mini-screen .menubar { position: static; }
+.mini-screen .mini-body { display: grid; justify-items: end; padding: 12px clamp(16px, 4vw, 40px) 40px; }
+.mini-screen .menu { margin-right: 0; width: min(100%, 290px); }
+@media (max-width: 900px) { .legend-wrap { grid-template-columns: minmax(0, 1fr); } }
+
+/* Get started */
+.setup { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
+.setup-step {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.1fr) auto;
+  gap: 8px 24px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line-2);
+}
+.setup-step .step-n { background: var(--blue-soft); color: var(--blue); transition: background-color 0.3s ease, color 0.3s ease; }
+.setup-step.done .step-n { background: var(--ok); color: #FFFFFF; }
+.setup-step h3 { font-size: 1.15rem; font-weight: 700; }
+.setup-step p { color: var(--ink-2); font-size: 15.5px; }
+.setup-cmd { min-width: 0; }
+.setup-step .cmd { width: 100%; justify-content: space-between; text-decoration: none; box-shadow: 0 0 0 1px var(--line); background: var(--surface); min-height: 44px; }
+.setup-step.done h3 { color: var(--ink-2); }
+@media (max-width: 900px) {
+  .setup-step { grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .setup-cmd { grid-column: 2 / -1; }
+}
+.done-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.done-toggle input { width: 18px; height: 18px; accent-color: var(--ok); margin: 0; }
+.progress { display: flex; align-items: center; gap: 14px; margin-top: 20px; color: var(--ink-2); font-size: 15px; }
+.progress-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--quiet); overflow: hidden; }
+.progress-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--ok); transition: width 0.5s var(--spring); }
+kbd.key {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 7px;
+  border-radius: 7px; background: linear-gradient(#FFFFFF, #F1F2F5);
+  box-shadow: 0 0 0 1px var(--line-2), 0 2px 0 var(--line-2);
+  font: 600 13px/1 var(--font-body); color: var(--ink); vertical-align: middle;
+}
+
+/* Step visuals: small drawings of the screens each step shows, with the
+   thing to click ringed in blue. */
+.vis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 8px 0 4px 64px; }
+.vis figure { margin: 0; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.vis-stage {
+  display: grid; place-items: center; min-height: 200px; padding: 16px; border-radius: 14px; overflow: hidden;
+  background: radial-gradient(90% 80% at 100% 0%, var(--wall-3), transparent 60%), var(--wall-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.vis figcaption { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.vis figcaption b { color: var(--ink); font-weight: 600; }
+.vis .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--blue); color: #FFFFFF; font: 700 12px/1 var(--font-display); }
+.hl { outline: 2.5px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+.mac-win { width: 100%; max-width: 300px; border-radius: 10px; background: #FFFFFF; overflow: hidden; box-shadow: 0 0 0 1px var(--line-2), 0 14px 30px -14px rgba(20, 30, 50, 0.45); font-size: 12.5px; }
+.mac-bar { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; background: #F1F2F5; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 11.5px; font-weight: 600; }
+.mac-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--tl-red); }
+.mac-bar i:nth-child(2) { background: var(--tl-yellow); }
+.mac-bar i:nth-child(3) { background: var(--tl-green); margin-right: 6px; }
+.mac-body { padding: 12px; }
+.file-row { display: flex; align-items: center; gap: 9px; padding: 6px 8px; }
+.file-row small { margin-left: auto; color: var(--ink-3); }
+.list-head { padding: 0 8px 4px; color: var(--ink-3); font-size: 11px; font-weight: 600; }
+.dmg-body { display: flex; align-items: flex-end; justify-content: space-around; gap: 6px; padding: 18px 10px 14px; }
+.dmg-item { display: grid; justify-items: center; gap: 6px; padding: 6px; font-size: 12px; }
+.dmg-item svg { width: 54px; height: 54px; }
+.dmg-arrow { width: 70px; height: 34px; margin-bottom: 22px; }
+.dialog { width: 100%; max-width: 230px; display: grid; justify-items: center; gap: 8px; padding: 16px 14px 12px; border-radius: 16px; background: #FFFFFF; text-align: center; box-shadow: 0 0 0 1px var(--line-2), 0 16px 34px -14px rgba(20, 30, 50, 0.5); }
+.dialog strong { font-size: 13px; }
+.dialog p { font-size: 11.5px; color: var(--ink-2); line-height: 1.35; }
+.dialog .pill { width: 100%; padding: 6px; border-radius: 999px; background: var(--quiet); font-size: 12px; font-weight: 600; }
+.dialog .pill.no { color: var(--ink-3); }
+.settings-mock { display: grid; grid-template-columns: 92px minmax(0, 1fr); }
+.settings-mock .side { display: grid; gap: 2px; align-content: start; padding: 8px 6px; background: #F6F7F9; border-right: 1px solid var(--line); font-size: 11px; color: var(--ink-2); }
+.settings-mock .side span { padding: 3px 6px; border-radius: 5px; }
+.settings-mock .side .on { background: var(--blue); color: #FFFFFF; }
+.settings-mock .main { display: grid; gap: 7px; align-content: start; padding: 10px; }
+.settings-mock .main strong { font-size: 12px; }
+.settings-mock .main p { font-size: 11px; color: var(--ink-2); line-height: 1.35; }
+.mock-btn { justify-self: start; padding: 4px 10px; border-radius: 6px; background: var(--quiet); font-size: 11.5px; font-weight: 600; }
+.mock-btn.blue { background: var(--blue); color: #FFFFFF; }
+.mini-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; width: 100%; max-width: 280px; height: 24px; padding: 0 10px; border-radius: 8px 8px 0 0; background: rgba(255, 255, 255, 0.7); font-size: 11px; font-weight: 600; }
+.mini-bar .ico { font-size: 14px; }
+.mini-bar .tray { padding: 2px 5px; border-radius: 5px; background: var(--line-2); display: inline-flex; }
+.mini-menu { width: 100%; max-width: 230px; justify-self: end; padding: 5px; border-radius: 10px; background: #FFFFFF; box-shadow: 0 0 0 1px var(--line-2), 0 14px 30px -14px rgba(20, 30, 50, 0.45); font-size: 12px; }
+.mini-menu div { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 5px; }
+.mini-menu .head { font-weight: 700; }
+.mini-menu .dim { color: var(--ink-3); }
+.mini-menu hr { border: 0; height: 1px; margin: 4px 8px; background: var(--line-2); }
+.mini-menu .ico { font-size: 12px; }
+.mini-menu .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.mini-menu .dot.warn { background: var(--tl-yellow); }
+.vis-stack { display: grid; justify-items: end; gap: 0; width: 100%; max-width: 280px; }
+.form-mock { display: grid; gap: 8px; }
+.form-mock label { display: grid; gap: 3px; font-size: 11px; color: var(--ink-2); }
+.form-mock .field-mock { padding: 5px 8px; border-radius: 6px; background: #FFFFFF; box-shadow: 0 0 0 1px var(--line-2); font-size: 12px; color: var(--ink); }
+@media (max-width: 900px) { .vis { margin-left: 0; } }
+
+/* Privacy */
+.privacy-figure { display: grid; gap: 14px; justify-items: center; }
+.privacy-diagram { width: 100%; height: auto; max-width: 520px; }
+.privacy-diagram text { font-family: var(--font-body); font-size: 13px; font-weight: 600; fill: var(--ink-2); pointer-events: none; }
+.pnode { cursor: pointer; outline: none; }
+.pnode rect { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; transition: stroke 0.2s ease, fill 0.2s ease; }
+.pnode:hover rect, .pnode:focus-visible rect, .pnode.on rect { stroke: var(--blue); fill: var(--blue-soft); }
+.pnode.portal rect { fill: var(--blue-soft); stroke: var(--blue); }
+.pnode.portal text { fill: var(--blue); font-weight: 700; }
+.privacy-diagram .link-ok { stroke: var(--blue); stroke-width: 3; fill: none; stroke-dasharray: 8 7; animation: flowLine 1.2s linear infinite; }
+.privacy-diagram .link-no { stroke: var(--ink-3); stroke-width: 2; stroke-dasharray: 5 6; fill: none; opacity: 0.6; }
+.privacy-diagram .cross { stroke: var(--red); stroke-width: 3; stroke-linecap: round; fill: none; }
+.privacy-diagram .mac { fill: var(--blue); }
+.privacy-diagram .glyph { stroke: #FFFFFF; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+.privacy-diagram .ring { fill: none; stroke: var(--blue-ring); stroke-width: 2; }
+@keyframes flowLine { to { stroke-dashoffset: -30; } }
+.privacy-info { min-height: 3.2em; max-width: 46ch; text-align: center; font-size: 15px; color: var(--ink-2); }
+.privacy-info b { color: var(--ink); }
+
+/* Download */
+.download {
+  display: grid; justify-items: center; gap: 20px; text-align: center;
+  padding-block: clamp(24px, 4vw, 48px);
+}
+.app-tile { width: 88px; height: 88px; }
+.download .lead { max-width: 52ch; }
+.download .cta-row { justify-content: center; }
+.note { max-width: 60ch; font-size: 14.5px; color: var(--ink-3); }
+
+/* FAQ */
+.faq { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+.faq-head { display: grid; gap: 14px; position: sticky; top: 110px; }
+.faq-list { border-top: 1px solid var(--line-2); }
+.faq-list details { border-bottom: 1px solid var(--line-2); }
+.faq-list summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; cursor: pointer; list-style: none; font-weight: 600; font-size: 17px; }
+.faq-list summary::-webkit-details-marker { display: none; }
+.faq-list summary .ico { color: var(--ink-3); font-size: 18px; transition: transform 0.3s var(--spring), color 0.2s ease; }
+.faq-list details[open] summary .ico { transform: rotate(45deg); color: var(--blue); }
+.faq-list details p { padding: 0 0 22px; max-width: 62ch; color: var(--ink-2); font-size: 16px; animation: logIn 0.3s var(--ease); }
+.faq-list code, .app-route code { padding: 2px 6px; border-radius: 6px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); font-size: 0.88em; }
+@media (max-width: 900px) { .faq { grid-template-columns: minmax(0, 1fr); } .faq-head { position: static; } }
+
+/* Footer */
+.footer { padding-block: 48px 40px; border-top: 1px solid var(--line); }
+.footer-grid { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px 48px; align-items: start; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; padding: 0; list-style: none; }
+.footer-links a { color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: 15px; }
+.footer-links a:hover { color: var(--blue); }
+.credit { margin-top: 26px; font-size: 13px; color: var(--ink-3); }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  padding: 10px 18px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-glass), 0 0 0 1px var(--line);
+  font-weight: 600; font-size: 15px; transform: translate(-50%, 0);
+  transition: opacity 0.2s ease, transform 0.3s var(--spring);
+}
+.toast.hide { opacity: 0; transform: translate(-50%, 12px); pointer-events: none; }
+
+@media (max-width: 700px) {
+  body { font-size: 16px; }
+  .hero .cta-row .btn, .hero .cta-row .cmd, .download .cta-row .btn, .download .cta-row .cmd { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav, .menu, .settings-win, .toast, .nav-links { background: rgba(248, 249, 251, 0.96); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-wifi" viewBox="0 0 24 24">
+    <path d="M3.5 9.6a12.5 12.5 0 0 1 17 0"/>
+    <path d="M6.6 12.9a8.1 8.1 0 0 1 10.8 0"/>
+    <path d="M9.6 16.1a3.9 3.9 0 0 1 4.8 0"/>
+    <circle cx="12" cy="19.2" r="1.3" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-wifi-slash" viewBox="0 0 24 24">
+    <path d="M3.5 9.6a12.5 12.5 0 0 1 17 0"/>
+    <path d="M6.6 12.9a8.1 8.1 0 0 1 10.8 0"/>
+    <path d="M9.6 16.1a3.9 3.9 0 0 1 4.8 0"/>
+    <circle cx="12" cy="19.2" r="1.3" fill="currentColor" stroke="none"/>
+    <path d="M4 3.5l16 17"/>
+  </symbol>
+  <symbol id="i-wifi-alert" viewBox="0 0 24 24">
+    <path d="M1.5 10.6a11 11 0 0 1 15 0"/>
+    <path d="M4.3 13.6a7 7 0 0 1 9.4 0"/>
+    <path d="M7 16.5a3.4 3.4 0 0 1 4 0"/>
+    <circle cx="9" cy="19.4" r="1.2" fill="currentColor" stroke="none"/>
+    <path d="M20.5 5v7.5"/>
+    <circle cx="20.5" cy="17" r="1.2" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-wifi-circle" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M6.8 11a7.5 7.5 0 0 1 10.4 0"/>
+    <path d="M9.2 13.8a3.8 3.8 0 0 1 5.6 0"/>
+    <circle cx="12" cy="16.6" r="1.1" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9.5"/>
+    <path d="M9.8 8.8v6.4M14.2 8.8v6.4"/>
+  </symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24">
+    <path d="M19.5 12a7.5 7.5 0 0 1-13 5.1"/>
+    <path d="M4.5 12a7.5 7.5 0 0 1 13-5.1"/>
+    <path d="M17.8 3.2v3.9h-3.9"/>
+    <path d="M6.2 20.8v-3.9h3.9"/>
+  </symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24">
+    <rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/>
+    <path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>
+  </symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24">
+    <circle cx="8" cy="15" r="4.5"/>
+    <path d="M11.2 11.8L20 3M16.5 6.5l2.5 2.5M14 9l2 2"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="currentColor"/></symbol>
+  <symbol id="i-rejoin" viewBox="0 0 24 24">
+    <path d="M3.5 9.6a12.5 12.5 0 0 1 17 0"/>
+    <path d="M6.6 12.9a8.1 8.1 0 0 1 10.8 0"/>
+    <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-github" viewBox="0 0 24 24">
+    <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>
+  </symbol>
+</svg>
+
+<header class="site-header">
+  <div class="wrap">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#top" aria-label="wificonnector home">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#0A7AFF"/>
+          <g fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round">
+            <path d="M7 13.6a12.8 12.8 0 0 1 18 0"/>
+            <path d="M10.4 17.1a8 8 0 0 1 11.2 0"/>
+          </g>
+          <circle cx="16" cy="21.6" r="2.2" fill="#FFFFFF"/>
+        </svg>
+        wificonnector
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#interval">Health check</a></li>
+        <li><a href="#menu-bar">Menu bar</a></li>
+        <li><a href="#get-started">Get started</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <a class="btn btn-primary btn-small" href="#download">Download</a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+        <svg class="ico"><use href="#i-menu"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <!-- Hero -->
+  <section class="hero wrap">
+    <div class="hero-grid">
+      <h1>Never log in to VIT Wi-Fi again.</h1>
+      <div class="hero-side">
+        <p class="lead">wificonnector spots the VIT Vellore hostel login page the moment your Mac joins the network and signs you in with your saved details. It sits in your menu bar and keeps you online.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
+            Download for Mac
+          </a>
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            Source on GitHub
+          </a>
+        </div>
+        <p class="fine">Free and open source. Needs macOS 15 or later, on Apple silicon or Intel.</p>
+      </div>
+    </div>
+
+    <figure class="scene" id="playground" aria-label="Try it: a working copy of the wificonnector menu and its log">
+      <div class="menubar">
+        <div class="left"><b>Finder</b><span>File</span><span>Edit</span><span>View</span><span>Go</span></div>
+        <button class="mb-icon" id="pg-icon" type="button" aria-expanded="true" aria-controls="pg-menu" aria-label="wificonnector menu">
+          <svg class="ico"><use href="#i-wifi"/></svg>
+        </button>
+        <span class="battery" aria-hidden="true"></span>
+        <span id="pg-clock">Mon 23:54</span>
+      </div>
+      <div class="scene-body">
+        <div class="scene-tools">
+          <button class="chip" type="button" id="pg-rejoin"><svg class="ico"><use href="#i-rejoin"/></svg>Rejoin Wi-Fi</button>
+          <button class="chip" type="button" id="pg-reset"><svg class="ico"><use href="#i-sync"/></svg>Reset demo</button>
+        </div>
+        <button class="btn btn-blue btn-small relaunch" id="pg-relaunch" type="button" hidden>Open WiFiConnector</button>
+        <div class="logwin" id="pg-logwin">
+          <div class="winbar">
+            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            ~/Library/Logs/wificonnector.log
+          </div>
+          <div class="log" id="pg-log" role="log" aria-live="polite"></div>
+        </div>
+        <div class="menu" id="pg-menu" role="menu" aria-label="wificonnector">
+          <div class="menu-item head"><span class="dot" id="pg-dot" aria-hidden="true"></span><span id="pg-head">Online</span></div>
+          <div class="menu-item dim" id="pg-detail">26BCE0000 · Logged in; internet is up</div>
+          <div class="menu-sep"></div>
+          <button class="menu-item" type="button" role="menuitem" data-action="login">Log In Now</button>
+          <button class="menu-item" type="button" role="menuitem" data-action="logout">Log Out</button>
+          <button class="menu-item" type="button" role="menuitem" data-action="pause" id="pg-pause">Pause Auto-Login</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" type="button" role="menuitem" data-action="settings">Settings… <kbd>⌘,</kbd></button>
+          <button class="menu-item" type="button" role="menuitem" data-action="log">Open Log</button>
+          <button class="menu-item" type="button" role="menuitemcheckbox" aria-checked="true" data-action="startup" id="pg-startup"><svg class="ico check on" id="pg-startup-check"><use href="#i-check"/></svg>Start at Login</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" type="button" role="menuitem" data-action="quit">Quit WiFiConnector <kbd>⌘Q</kbd></button>
+        </div>
+        <div class="settings-win" id="pg-settings" role="dialog" aria-label="WiFiConnector Settings" hidden>
+          <div class="winbar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>WiFiConnector Settings</div>
+          <form class="settings-body" id="pg-settings-form">
+            <div class="field"><label for="pg-user">Registration number</label><input id="pg-user" type="text" autocomplete="off" spellcheck="false" maxlength="12" value="26BCE0000"></div>
+            <div class="field"><span class="label">Wi-Fi password</span><span class="fake-input">••••••••</span></div>
+            <div class="settings-foot">
+              <small>Demo only: nothing here is saved.</small>
+              <div class="btns">
+                <button class="btn btn-quiet" type="button" id="pg-settings-cancel">Cancel</button>
+                <button class="btn btn-blue" type="submit">Save</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- Scenario simulator -->
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 class="h2">What happens when your Mac joins the Wi-Fi</h2>
+        <p class="lead">Pick a network and run it. Each step shows the request wificonnector sends and the answer it gets back.</p>
+      </div>
+      <div class="seg-scroll">
+        <div class="segmented" id="scenario-tabs" role="tablist" aria-label="Network">
+          <span class="thumb" aria-hidden="true"></span>
+          <button type="button" role="tab" aria-selected="true" data-scenario="hostel">Hostel Wi-Fi</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="vpn">Cloudflare / VPN</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="cafe">Café Wi-Fi</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="wrong">Wrong password</button>
+        </div>
+      </div>
+      <ol class="flow" id="flow" aria-live="polite"></ol>
+      <div class="outcome">
+        <div class="result" id="flow-result"></div>
+        <button class="btn btn-blue" type="button" id="flow-run"><svg class="ico" style="font-size:12px"><use href="#i-play"/></svg>Run it again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interval explorer -->
+  <section class="section" id="interval">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 class="h2">How often it checks</h2>
+        <p class="lead">Joining a network starts a check straight away. A timer also checks, in case the portal ends your session while you're still connected. Move the slider to compare intervals.</p>
+      </div>
+      <div class="interval">
+        <div class="interval-controls">
+          <div>
+            <div class="interval-value"><span id="iv-value">15</span><small>seconds</small></div>
+            <span class="tag" id="iv-tag">What wificonnector uses</span>
+          </div>
+          <div>
+            <label class="muted" for="iv-range" style="font-size:14px">Check every</label>
+            <input id="iv-range" type="range" min="0" max="4" step="1" value="2" aria-describedby="iv-note">
+            <div class="range-labels"><span>5s</span><span>10s</span><span>15s</span><span>30s</span><span>60s</span></div>
+          </div>
+          <div class="timeline" id="iv-timeline" aria-hidden="true"></div>
+          <p class="timeline-caption">One minute of checks. Each line is one tiny request.</p>
+        </div>
+        <div style="display:grid;gap:18px;align-content:start;min-width:0">
+          <dl class="stats">
+            <div class="stat"><dt>Longest time offline after a kick</dt><dd id="iv-worst">~15s</dd></div>
+            <div class="stat"><dt>Checks per hour</dt><dd id="iv-hour">240</dd></div>
+            <div class="stat"><dt>Data per day</dt><dd id="iv-data">~6 MB</dd></div>
+          </dl>
+          <p class="interval-note" id="iv-note">Recovers fast, and the cost is still tiny.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Keychain -->
+  <section class="section">
+    <div class="wrap split">
+      <div class="keychain" aria-label="The wificonnector item in the macOS login Keychain">
+        <div class="keychain-top">
+          <span class="key-badge"><svg class="ico"><use href="#i-key"/></svg></span>
+          <div><strong>wificonnector (VIT Wi-Fi)</strong><span>Application password in your login Keychain</span></div>
+        </div>
+        <dl class="kv">
+          <dt>Account</dt><dd>26BCE0000</dd>
+          <dt>Password</dt><dd><span id="kc-pw">••••••••••</span><button class="reveal-pw" type="button" id="kc-reveal">Show</button></dd>
+          <dt>Service</dt><dd>wificonnector</dd>
+          <dt>Allowed to read</dt><dd>/usr/bin/security</dd>
+        </dl>
+      </div>
+      <div class="split-text">
+        <h2 class="h2">Your password stays in your Keychain</h2>
+        <p class="lead">macOS's own password store holds your Wi-Fi password, locked with your Mac login. wificonnector reads it only at the moment it signs you in.</p>
+        <ul>
+          <li>Never written to a file or to the log.</li>
+          <li>Never on a command line, where other apps could see it.</li>
+          <li>Only sent once the VIT login page has been recognised.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu bar legend -->
+  <section class="section" id="menu-bar">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 class="h2">What the menu-bar icon means</h2>
+        <p class="lead">Pick a state to see the icon and what the menu says.</p>
+      </div>
+      <div class="legend-wrap">
+        <div class="legend" id="legend" role="group" aria-label="Icon states">
+          <button type="button" aria-pressed="true" data-state="online"><span class="glyph"><svg class="ico"><use href="#i-wifi"/></svg></span><span><strong>Online</strong><small>Logged in and the internet works.</small></span></button>
+          <button type="button" aria-pressed="false" data-state="busy"><span class="glyph"><svg class="ico"><use href="#i-sync"/></svg></span><span><strong>Working</strong><small>Logging in or out right now.</small></span></button>
+          <button type="button" aria-pressed="false" data-state="alert"><span class="glyph"><svg class="ico"><use href="#i-wifi-alert"/></svg></span><span><strong>Needs a look</strong><small>Wrong password, no internet yet, or no details saved.</small></span></button>
+          <button type="button" aria-pressed="false" data-state="paused"><span class="glyph"><svg class="ico"><use href="#i-pause"/></svg></span><span><strong>Paused</strong><small>Auto-login is off until you resume it.</small></span></button>
+          <button type="button" aria-pressed="false" data-state="other"><span class="glyph"><svg class="ico"><use href="#i-wifi-circle"/></svg></span><span><strong>Not VIT</strong><small>Another network, so it stays out of the way.</small></span></button>
+        </div>
+        <div class="mini-screen" aria-live="polite">
+          <div class="menubar">
+            <span class="mb-icon" id="lg-icon" aria-hidden="true" style="background:var(--line-2)"><svg class="ico"><use href="#i-wifi"/></svg></span>
+            <span class="battery" aria-hidden="true"></span>
+            <span>Mon 23:54</span>
+          </div>
+          <div class="mini-body">
+            <div class="menu">
+              <div class="menu-item head"><span class="dot" id="lg-dot"></span><span id="lg-head">Online</span></div>
+              <div class="menu-item dim" id="lg-detail">26BCE0000 · Logged in; internet is up (23:54)</div>
+              <div class="menu-sep"></div>
+              <div class="menu-item">Log In Now</div>
+              <div class="menu-item">Log Out</div>
+              <div class="menu-item" id="lg-pause">Pause Auto-Login</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Get started -->
+  <section class="section" id="get-started">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 class="h2">Set it up</h2>
+        <p class="lead">Download the app, or set it up from Terminal. Tick each step as you finish it.</p>
+      </div>
+      <div class="seg-scroll">
+        <div class="segmented" id="setup-tabs" role="tablist" aria-label="Setup method">
+          <span class="thumb" aria-hidden="true"></span>
+          <button type="button" role="tab" aria-selected="true" data-setup="app">Download the app</button>
+          <button type="button" role="tab" aria-selected="false" data-setup="terminal">Terminal</button>
+        </div>
+      </div>
+      <ol class="setup" id="setup"></ol>
+      <div class="progress"><span id="setup-count">0 of 3 done</span><span class="progress-bar"><i id="setup-bar"></i></span></div>
+    </div>
+  </section>
+
+  <!-- Privacy -->
+  <section class="section" id="privacy">
+    <div class="wrap split">
+      <div class="privacy-figure">
+        <svg class="privacy-diagram" viewBox="0 0 520 380" role="group" aria-label="Where your details go. Select a box to learn more.">
+          <circle class="ring" cx="260" cy="190" r="70"/>
+          <circle class="ring" cx="260" cy="190" r="100" style="stroke:rgba(10,122,255,0.08)"/>
+          <line class="link-ok" x1="260" y1="150" x2="260" y2="70"/>
+          <line class="link-no" x1="260" y1="190" x2="96" y2="292"/>
+          <line class="link-no" x1="260" y1="190" x2="424" y2="292"/>
+          <line class="link-no" x1="260" y1="230" x2="260" y2="316"/>
+          <path class="cross" d="M170 234l16 16M186 234l-16 16"/>
+          <path class="cross" d="M334 234l16 16M350 234l-16 16"/>
+          <path class="cross" d="M252 262l16 16M268 262l-16 16"/>
+          <g class="pnode portal on" tabindex="0" role="button" data-info="portal">
+            <rect x="170" y="24" width="180" height="46" rx="23"/>
+            <text x="260" y="53" text-anchor="middle">VIT login page</text>
+          </g>
+          <g class="pnode" tabindex="0" role="button" data-info="servers">
+            <rect x="22" y="292" width="148" height="44" rx="22"/>
+            <text x="96" y="319" text-anchor="middle">Our servers</text>
+          </g>
+          <g class="pnode" tabindex="0" role="button" data-info="analytics">
+            <rect x="350" y="292" width="148" height="44" rx="22"/>
+            <text x="424" y="319" text-anchor="middle">Analytics</text>
+          </g>
+          <g class="pnode" tabindex="0" role="button" data-info="ads">
+            <rect x="200" y="316" width="120" height="44" rx="22"/>
+            <text x="260" y="343" text-anchor="middle">Ads</text>
+          </g>
+          <g class="pnode" tabindex="0" role="button" data-info="mac">
+            <rect class="mac" x="216" y="146" width="88" height="88" rx="24" style="fill:var(--blue);stroke:none"/>
+            <path class="glyph" d="M236 186a33 33 0 0 1 48 0"/>
+            <path class="glyph" d="M245 197a20 20 0 0 1 30 0"/>
+            <circle cx="260" cy="210" r="4" fill="#FFFFFF"/>
+          </g>
+        </svg>
+        <p class="privacy-info" id="privacy-info"></p>
+      </div>
+      <div class="split-text">
+        <h2 class="h2">It only talks to the VIT login page</h2>
+        <p class="lead">You don't create an account, and nothing is sent anywhere else. What it knows stays on your Mac.</p>
+        <ul>
+          <li>Your details live in your login Keychain and one small settings file.</li>
+          <li>Its log stays in <code>~/Library/Logs</code> and never leaves your Mac.</li>
+          <li>The code is open, so anyone can check exactly what it does.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section class="section" id="download">
+    <div class="wrap">
+      <div class="download">
+        <svg class="app-tile" viewBox="0 0 96 96" aria-hidden="true">
+          <rect width="96" height="96" rx="22" fill="#0A7AFF"/>
+          <g fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+            <path d="M21 41a38 38 0 0 1 54 0"/>
+            <path d="M31.5 51.5a23.5 23.5 0 0 1 33 0"/>
+          </g>
+          <circle cx="48" cy="65" r="6.5" fill="#FFFFFF"/>
+        </svg>
+        <h2 class="h2">Get wificonnector</h2>
+        <p class="lead">For Macs running macOS 15 or later, on VIT hostel Wi-Fi.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-download"/></svg>
+            Download for Mac
+          </a>
+          <a class="btn btn-quiet" href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">
+            <svg class="ico" style="font-size:19px"><use href="#i-github"/></svg>
+            Source on GitHub
+          </a>
+        </div>
+        <p class="note">The first time you open it, macOS says it can't verify the app, because it isn't signed with a paid Apple Developer ID. Open System Settings, go to Privacy &amp; Security and click Open Anyway. You only do this once.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="wrap faq">
+      <div class="faq-head">
+        <h2 class="h2">Questions</h2>
+        <p class="muted">Something else? Open an issue on GitHub.</p>
+      </div>
+      <div class="faq-list">
+        <details name="faq" open>
+          <summary>Is this an official VIT app?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>No. It's an independent, open-source project. It does what you'd do in the browser: fill in the hostel login page for you.</p>
+        </details>
+        <details name="faq">
+          <summary>Does it work in the academic blocks?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>Not yet. The academic blocks use a different login page. Support for it is planned.</p>
+        </details>
+        <details name="faq">
+          <summary>Do I need Xcode?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>No. Download the app from the latest release. Xcode is only for building it yourself.</p>
+        </details>
+        <details name="faq">
+          <summary>Why does macOS say it can't verify the app?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>Apple only vouches for apps signed with a paid Developer ID, and this free app isn't. Click Done, not Move to Trash. Then open System Settings, go to Privacy &amp; Security and click Open Anyway once. Prefer Terminal? <code>xattr -dr com.apple.quarantine /Applications/WiFiConnector.app</code> does the same. The code is public, so you can check what it does first.</p>
+        </details>
+        <details name="faq">
+          <summary>What happens if my password is wrong?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>The portal says so, wificonnector shows a notification, and it waits five minutes before trying again so your account doesn't get locked. Fix it with <code>wificonnector setup</code> or the app's Settings.</p>
+        </details>
+        <details name="faq">
+          <summary>I use Cloudflare 1.1.1.1 or a VPN. Will it work?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>Yes. Before you're logged in, it looks names up through the network's own DNS and, if needed, talks to the router directly. It has been tested with Cloudflare's app switched on.</p>
+        </details>
+        <details name="faq">
+          <summary>How does it know it's on VIT Wi-Fi?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>It only sends your details when the network redirects to the VIT hostel login page, and, when macOS shows the network name, only if that name contains "VIT".</p>
+        </details>
+        <details name="faq">
+          <summary>How do I remove it?<svg class="ico"><use href="#i-plus"/></svg></summary>
+          <p>Run <code>wificonnector uninstall</code>. Add <code>--purge</code> to delete your saved details as well.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <a class="brand" href="#top">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#0A7AFF"/>
+          <g fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round">
+            <path d="M7 13.6a12.8 12.8 0 0 1 18 0"/>
+            <path d="M10.4 17.1a8 8 0 0 1 11.2 0"/>
+          </g>
+          <circle cx="16" cy="21.6" r="2.2" fill="#FFFFFF"/>
+        </svg>
+        wificonnector
+      </a>
+      <ul class="footer-links">
+        <li><a href="https://github.com/anujbajaj4/wificonnector" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/anujbajaj4/wificonnector/blob/main/docs/HOW-IT-WORKS.md" target="_blank" rel="noopener">How it works</a></li>
+        <li><a href="https://github.com/anujbajaj4/wificonnector/blob/main/app/README.md" target="_blank" rel="noopener">Menu-bar app</a></li>
+        <li><a href="https://github.com/anujbajaj4/wificonnector/blob/main/LICENSE" target="_blank" rel="noopener">MIT license</a></li>
+      </ul>
+    </div>
+    <p class="credit">The portal protocol comes from Latch by VinnovateIT. wificonnector isn't affiliated with VIT or Pronto Networks.</p>
+  </div>
+</footer>
+
+<div class="toast hide" id="toast" role="status" aria-live="polite">Copied</div>
+
+<script>
+(function () {
+  document.documentElement.classList.add("js");
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function clock(withSeconds) {
+    var d = new Date();
+    return pad(d.getHours()) + ":" + pad(d.getMinutes()) + (withSeconds ? ":" + pad(d.getSeconds()) : "");
+  }
+  function store(key, value) {
+    try {
+      if (value === undefined) return JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) { return null; }
+  }
+
+  /* Toast and copy buttons ------------------------------------------------ */
+  var toast = $("toast"), toastTimer;
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.remove("hide");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.add("hide"); }, 1800);
+  }
+  function wireCopy(root) {
+    root.querySelectorAll("[data-copy]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var text = button.getAttribute("data-copy");
+        function done() {
+          showToast("Copied");
+          button.classList.add("copied");
+          setTimeout(function () { button.classList.remove("copied"); }, 1500);
+        }
+        function fallback() {
+          var label = button.querySelector("span:not(.prompt)") || button;
+          var range = document.createRange();
+          range.selectNodeContents(label);
+          var selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          showToast("Press ⌘C to copy");
+        }
+        try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+      });
+    });
+  }
+  wireCopy(document);
+
+  /* Nav: mobile menu and current section ---------------------------------- */
+  var toggle = $("nav-toggle"), links = $("nav-links");
+  toggle.addEventListener("click", function () {
+    var open = links.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  });
+  links.addEventListener("click", function (event) {
+    if (event.target.closest("a")) { links.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+  });
+  var navLinks = Array.prototype.slice.call(links.querySelectorAll("a"));
+  if ("IntersectionObserver" in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach(function (a) { a.setAttribute("aria-current", String(a.getAttribute("href") === "#" + entry.target.id)); });
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    navLinks.forEach(function (a) { var s = document.querySelector(a.getAttribute("href")); if (s) spy.observe(s); });
+
+  }
+
+  /* Segmented controls with a sliding thumb ------------------------------- */
+  function segmented(root, onChange) {
+    var thumb = root.querySelector(".thumb");
+    var buttons = Array.prototype.slice.call(root.querySelectorAll("button"));
+    function place() {
+      var current = root.querySelector('[aria-selected="true"]');
+      thumb.style.left = current.offsetLeft + "px";
+      thumb.style.width = current.offsetWidth + "px";
+    }
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        buttons.forEach(function (b) { b.setAttribute("aria-selected", String(b === button)); });
+        place();
+        onChange(button);
+      });
+    });
+    window.addEventListener("resize", place);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+    place();
+    return { select: function (button) { button.click(); } };
+  }
+
+  /* Hero playground -------------------------------------------------------- */
+  var pg = {
+    icon: $("pg-icon"), menu: $("pg-menu"), head: $("pg-head"), dot: $("pg-dot"), detail: $("pg-detail"),
+    log: $("pg-log"), logwin: $("pg-logwin"), pause: $("pg-pause"), startupCheck: $("pg-startup-check"),
+    startup: $("pg-startup"), settings: $("pg-settings"), user: $("pg-user"), relaunch: $("pg-relaunch"),
+    rejoin: $("pg-rejoin"), reset: $("pg-reset"), clockEl: $("pg-clock")
+  };
+  var GLYPHS = { online: "i-wifi", busy: "i-sync", paused: "i-pause", alert: "i-wifi-alert", off: "i-wifi-slash", other: "i-wifi-circle" };
+  var state, timers = [];
+  function initialState() {
+    return { status: "online", paused: false, busy: false, startup: true, user: "26BCE0000", last: "Logged in; internet is up", lastTime: clock(false), quit: false };
+  }
+  function later(ms, fn) { timers.push(setTimeout(fn, reduceMotion.matches ? 0 : ms)); }
+  function setGlyph(iconEl, name) { iconEl.querySelector("use").setAttribute("href", "#" + GLYPHS[name]); }
+  function addLog(message, tone) {
+    var line = document.createElement("div");
+    line.className = "log-line" + (tone ? " " + tone : "");
+    var time = document.createElement("time");
+    time.textContent = clock(true);
+    var text = document.createElement("span");
+    text.textContent = message;
+    line.appendChild(time);
+    line.appendChild(text);
+    pg.log.appendChild(line);
+    while (pg.log.children.length > 30) pg.log.removeChild(pg.log.firstChild);
+    pg.log.scrollTop = pg.log.scrollHeight;
+    state.last = message;
+    state.lastTime = clock(false);
+  }
+  function render() {
+    var glyph, head, dot;
+    if (state.busy) { glyph = "busy"; head = state.busyText; dot = "busy"; }
+    else if (state.paused) { glyph = "paused"; head = "Auto-login paused"; dot = "warn"; }
+    else if (state.status === "online") { glyph = "online"; head = "Online"; dot = ""; }
+    else if (state.status === "off") { glyph = "off"; head = "Wi-Fi not connected"; dot = "off"; }
+    else { glyph = "alert"; head = "Logged out"; dot = "warn"; }
+    setGlyph(pg.icon, glyph);
+    pg.icon.classList.toggle("busy", state.busy);
+    pg.icon.classList.toggle("gone", state.quit);
+    pg.head.textContent = head;
+    pg.dot.className = "dot" + (dot ? " " + dot : "");
+    pg.detail.textContent = state.user + " · " + state.last + " (" + state.lastTime + ")";
+    pg.pause.textContent = state.paused ? "Resume Auto-Login" : "Pause Auto-Login";
+    pg.startupCheck.classList.toggle("on", state.startup);
+    pg.startup.setAttribute("aria-checked", String(state.startup));
+    pg.menu.querySelectorAll("button.menu-item").forEach(function (b) {
+      var action = b.getAttribute("data-action");
+      b.disabled = state.busy && (action === "login" || action === "logout" || action === "pause");
+    });
+    pg.relaunch.hidden = !state.quit;
+    pg.rejoin.disabled = state.quit || state.busy;
+  }
+  function setMenu(open) {
+    pg.menu.classList.toggle("closed", !open);
+    pg.icon.setAttribute("aria-expanded", String(open));
+  }
+  function bump() {
+    pg.icon.classList.remove("pop");
+    void pg.icon.offsetWidth;
+    pg.icon.classList.add("pop");
+  }
+  function loginSequence(manual) {
+    state.busy = true; state.busyText = "Logging in…"; render();
+    later(500, function () { addLog("VIT portal (pronto) detected on 'name hidden by macOS'; logging in as " + state.user); render(); });
+    later(1200, function () { addLog("Portal answered HTTP 200 with no error message; login accepted"); render(); });
+    later(1900, function () {
+      state.busy = false; state.status = "online";
+      if (manual) state.paused = false;
+      addLog("Logged in; internet is up", "ok");
+      render(); bump();
+    });
+  }
+  var actions = {
+    login: function () { loginSequence(true); },
+    logout: function () {
+      state.busy = true; state.busyText = "Logging out…"; render();
+      later(500, function () { addLog("Auto-login paused until you run 'wificonnector login'."); render(); });
+      later(900, function () {
+        state.busy = false; state.paused = true; state.status = "portal";
+        addLog("Logged out of VIT Wi-Fi.");
+        render(); bump();
+      });
+    },
+    pause: function () {
+      state.paused = !state.paused;
+      addLog(state.paused ? "Auto-login paused." : "Auto-login resumed.");
+      render(); bump();
+      if (!state.paused && state.status !== "online") later(700, function () { loginSequence(false); });
+    },
+    settings: function () {
+      pg.user.value = state.user;
+      pg.settings.hidden = false;
+      setTimeout(function () { pg.user.focus(); pg.user.select(); }, 50);
+    },
+    log: function () {
+      pg.logwin.classList.add("flash");
+      later(900, function () { pg.logwin.classList.remove("flash"); });
+    },
+    startup: function () { state.startup = !state.startup; render(); },
+    quit: function () { setMenu(false); state.quit = true; render(); }
+  };
+  pg.menu.addEventListener("click", function (event) {
+    var item = event.target.closest("button.menu-item");
+    if (!item || item.disabled) return;
+    actions[item.getAttribute("data-action")]();
+  });
+  pg.icon.addEventListener("click", function () { setMenu(pg.menu.classList.contains("closed")); });
+  pg.relaunch.addEventListener("click", function () { state.quit = false; render(); setMenu(true); bump(); });
+  pg.rejoin.addEventListener("click", function () {
+    setMenu(true);
+    state.status = "off"; render();
+    addLog("Wi-Fi (en0) is not connected"); render();
+    later(900, function () {
+      if (state.paused) { addLog("Auto-login is paused (run 'wificonnector login' to resume)"); state.status = "portal"; render(); return; }
+      if (state.status === "off") loginSequence(false);
+    });
+  });
+  $("pg-settings-cancel").addEventListener("click", function () { pg.settings.hidden = true; });
+  $("pg-settings-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var user = pg.user.value.replace(/\s+/g, "").toUpperCase();
+    if (!user) { pg.user.focus(); return; }
+    state.user = user;
+    pg.settings.hidden = true;
+    addLog("Saved credentials for " + user + ".");
+    render();
+    showToast("Saved (demo)");
+  });
+  pg.settings.addEventListener("keydown", function (event) { if (event.key === "Escape") pg.settings.hidden = true; });
+  function resetPlayground() {
+    timers.forEach(clearTimeout); timers = [];
+    state = initialState();
+    pg.log.textContent = "";
+    pg.settings.hidden = true;
+    addLog("Wi-Fi (en0) is not connected");
+    addLog("VIT portal (pronto) detected on 'name hidden by macOS'; logging in as 26BCE0000");
+    addLog("Portal answered HTTP 200 with no error message; login accepted");
+    addLog("Logged in; internet is up", "ok");
+    setMenu(true);
+    render();
+  }
+  pg.reset.addEventListener("click", resetPlayground);
+  function tickClock() {
+    var d = new Date();
+    pg.clockEl.textContent = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()] + " " + clock(false);
+  }
+  tickClock(); setInterval(tickClock, 15000);
+  resetPlayground();
+
+  /* Scenario simulator ----------------------------------------------------- */
+  var SCENARIOS = {
+    hostel: {
+      steps: [
+        { t: "Check", c: "GET generate_204 → 302", p: "The tiny request gets redirected, so something is in the way.", s: "ok", b: "Portal" },
+        { t: "Spot the portal", c: "Location: phc.prontonetworks.com", p: "The redirect names the VIT hostel login page.", s: "ok", b: "VIT" },
+        { t: "Sign in", c: "POST /cgi-bin/authlogin → 200", p: "Registration number and password go to the portal, and nowhere else.", s: "ok", b: "Accepted" },
+        { t: "Confirm", c: "GET generate_204 → 204", p: "The internet answers, so you're really online.", s: "ok", b: "Online" }
+      ],
+      result: ["ok", "Logged in; internet is up"]
+    },
+    vpn: {
+      steps: [
+        { t: "Check", c: "GET generate_204 → exit 7", p: "The VPN blocks everything until you're logged in. No redirect to read.", s: "fail", b: "Blocked" },
+        { t: "Ask the router", c: "GET http://gateway/ → 302", p: "The router is on your local network, so it still answers, and it points to phc.prontonetworks.com.", s: "ok", b: "VIT" },
+        { t: "Sign in", c: "POST via the gateway → 200", p: "The portal's address can't be reached yet, so the login goes through the router.", s: "ok", b: "Accepted" },
+        { t: "Confirm", c: "GET generate_204 → 204", p: "Once you're in, the VPN reconnects and the internet answers.", s: "ok", b: "Online" }
+      ],
+      result: ["ok", "Logged in; internet is up"]
+    },
+    cafe: {
+      steps: [
+        { t: "Check", c: "GET generate_204 → 302", p: "The tiny request gets redirected, so something is in the way.", s: "ok", b: "Portal" },
+        { t: "Spot the portal", c: "Location: wifi.cafe.example", p: "That's not the VIT login page.", s: "fail", b: "Not VIT" },
+        { t: "Sign in", c: "(skipped)", p: "Your details are never sent to a login page it doesn't recognise.", s: "skip", b: "Skipped" },
+        { t: "Confirm", c: "(skipped)", p: "Log in to the café's page yourself, as usual.", s: "skip", b: "Skipped" }
+      ],
+      result: ["bad", "Not a VIT portal; not sending credentials"]
+    },
+    wrong: {
+      steps: [
+        { t: "Check", c: "GET generate_204 → 302", p: "The tiny request gets redirected, so something is in the way.", s: "ok", b: "Portal" },
+        { t: "Spot the portal", c: "Location: phc.prontonetworks.com", p: "The redirect names the VIT hostel login page.", s: "ok", b: "VIT" },
+        { t: "Sign in", c: "200: \"Invalid username or password\"", p: "The portal refuses the details and says so on the page.", s: "fail", b: "Refused" },
+        { t: "Wait", c: "backoff 5 minutes", p: "It notifies you and waits, so your account doesn't get locked.", s: "skip", b: "Paused" }
+      ],
+      result: ["bad", "Login refused; check your credentials"]
+    }
+  };
+  var flow = $("flow"), flowResult = $("flow-result"), flowTimers = [], currentScenario = "hostel";
+  function renderFlow(name, animate) {
+    flowTimers.forEach(clearTimeout); flowTimers = [];
+    var sc = SCENARIOS[name];
+    flow.textContent = "";
+    var cards = sc.steps.map(function (step, i) {
+      var li = document.createElement("li");
+      li.className = "step" + (animate ? " waiting" : " " + step.s);
+      li.innerHTML = '<div class="step-top"><span class="step-n">' + (i + 1) + '</span><span class="badge"></span></div><h3></h3><code></code><p></p>';
+      li.querySelector(".badge").textContent = step.b;
+      li.querySelector("h3").textContent = step.t;
+      li.querySelector("code").textContent = step.c;
+      li.querySelector("p").textContent = step.p;
+      flow.appendChild(li);
+      return li;
+    });
+    function showResult() {
+      flowResult.className = "result " + sc.result[0];
+      flowResult.innerHTML = '<svg class="ico"><use href="#' + (sc.result[0] === "ok" ? "i-check" : "i-x") + '"/></svg><b></b>';
+      flowResult.querySelector("b").textContent = sc.result[1];
+    }
+    if (!animate || reduceMotion.matches) {
+      cards.forEach(function (li, i) { li.className = "step " + sc.steps[i].s; });
+      showResult();
+      return;
+    }
+    flowResult.className = "result";
+    flowResult.textContent = "Running…";
+    cards.forEach(function (li, i) {
+      flowTimers.push(setTimeout(function () { li.className = "step active"; }, 150 + i * 650));
+      flowTimers.push(setTimeout(function () { li.className = "step " + sc.steps[i].s; }, 150 + i * 650 + 560));
+    });
+    flowTimers.push(setTimeout(showResult, 150 + 4 * 650));
+  }
+  segmented($("scenario-tabs"), function (button) {
+    currentScenario = button.getAttribute("data-scenario");
+    renderFlow(currentScenario, true);
+  });
+  $("flow-run").addEventListener("click", function () { renderFlow(currentScenario, true); });
+  renderFlow("hostel", false);
+
+  /* Interval explorer ------------------------------------------------------ */
+  var INTERVALS = [
+    { s: 5, hour: 720, data: "~17 MB", note: "Needs launchd's 10-second throttle lowered, and runs can overlap a slow login. Little real benefit." },
+    { s: 10, hour: 360, data: "~9 MB", note: "The fastest launchd allows without changing its throttle." },
+    { s: 15, hour: 240, data: "~6 MB", note: "Recovers fast, and the cost is still tiny." },
+    { s: 30, hour: 120, data: "~3 MB", note: "A good balance. A kick usually goes unnoticed." },
+    { s: 60, hour: 60, data: "~1.4 MB", note: "What Latch uses. The lightest, but you may notice a minute offline now and then." }
+  ];
+  var range = $("iv-range");
+  function renderInterval() {
+    var it = INTERVALS[Number(range.value)];
+    $("iv-value").textContent = it.s;
+    $("iv-tag").classList.toggle("hidden", it.s !== 15);
+    $("iv-worst").textContent = "~" + it.s + "s";
+    $("iv-hour").textContent = it.hour;
+    $("iv-data").textContent = it.data;
+    $("iv-note").textContent = it.note;
+    var tl = $("iv-timeline");
+    tl.textContent = "";
+    for (var t = 0; t < 60; t += it.s) {
+      var tick = document.createElement("i");
+      tick.style.left = (2 + (t / 60) * 96) + "%";
+      tick.style.animationDelay = (t / 60) * 0.35 + "s";
+      tl.appendChild(tick);
+    }
+    [0, 15, 30, 45].forEach(function (sec) {
+      var label = document.createElement("span");
+      label.style.left = (2 + (sec / 60) * 96) + "%";
+      label.textContent = sec + "s";
+      tl.appendChild(label);
+    });
+  }
+  range.addEventListener("input", renderInterval);
+  renderInterval();
+
+  /* Keychain card ---------------------------------------------------------- */
+  $("kc-reveal").addEventListener("click", function () {
+    var pw = $("kc-pw");
+    pw.innerHTML = '<span class="locked">Locked: needs your Mac password</span>';
+    this.textContent = "Hide";
+    var self = this;
+    setTimeout(function () { pw.textContent = "••••••••••"; self.textContent = "Show"; }, 2200);
+  });
+
+  /* Icon legend ------------------------------------------------------------ */
+  var LEGEND = {
+    online: { g: "online", h: "Online", d: "26BCE0000 · Logged in; internet is up (23:54)", dot: "", p: "Pause Auto-Login" },
+    busy: { g: "busy", h: "Logging in…", d: "26BCE0000 · VIT portal (pronto) detected (23:54)", dot: "busy", p: "Pause Auto-Login" },
+    alert: { g: "alert", h: "Login refused: check your password", d: "26BCE0000 · Login refused; check your credentials (23:54)", dot: "warn", p: "Pause Auto-Login" },
+    paused: { g: "paused", h: "Auto-login paused", d: "26BCE0000 · Auto-login paused. (23:54)", dot: "warn", p: "Resume Auto-Login" },
+    other: { g: "other", h: "Not on VIT Wi-Fi", d: "26BCE0000 · Network 'Home' is not a VIT network (23:54)", dot: "off", p: "Pause Auto-Login" }
+  };
+  var legendButtons = Array.prototype.slice.call(document.querySelectorAll("#legend button"));
+  legendButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      legendButtons.forEach(function (b) { b.setAttribute("aria-pressed", String(b === button)); });
+      var l = LEGEND[button.getAttribute("data-state")];
+      var icon = $("lg-icon");
+      setGlyph(icon, l.g);
+      icon.classList.toggle("busy", l.g === "busy");
+      icon.classList.remove("pop"); void icon.offsetWidth; icon.classList.add("pop");
+      $("lg-head").textContent = l.h;
+      $("lg-detail").textContent = l.d;
+      $("lg-dot").className = "dot" + (l.dot ? " " + l.dot : "");
+      $("lg-pause").textContent = l.p;
+    });
+  });
+
+
+  /* Drawings of what each app-setup step looks like on screen. */
+  var APP_TILE = '<svg viewBox="0 0 96 96" aria-hidden="true"><rect width="96" height="96" rx="22" fill="#0A7AFF"/><g fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"><path d="M21 41a38 38 0 0 1 54 0"/><path d="M31.5 51.5a23.5 23.5 0 0 1 33 0"/></g><circle cx="48" cy="65" r="6.5" fill="#FFFFFF"/></svg>';
+  var FOLDER = '<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M4 10a5 5 0 0 1 5-5h15l6 6h25a5 5 0 0 1 5 5v4H4z" fill="#4AA5F5"/><rect x="4" y="15" width="56" height="36" rx="5" fill="#6CB8FA"/><path d="M24 40l8-14 8 14z" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/></svg>';
+  var DISK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" fill="#E6E9EF" stroke="#A8AFBC"/><circle cx="12" cy="12" r="3.2" fill="#A8AFBC"/></svg>';
+  var SHIELD = '<svg viewBox="0 0 56 56" width="48" height="48" aria-hidden="true"><rect x="4" y="4" width="44" height="44" rx="11" fill="#3A3F4B"/><circle cx="26" cy="26" r="13" fill="#9AA1AE"/><circle cx="26" cy="26" r="7" fill="#6B7280"/><path d="M40 30l10 18H30z" fill="#FEBC2E" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M40 36v6" stroke="#3A3F4B" stroke-width="2.4" stroke-linecap="round"/><circle cx="40" cy="45" r="1.3" fill="#3A3F4B"/></svg>';
+  function cap(n, html) { return '<figcaption><span class="n">' + n + '</span><span>' + html + '</span></figcaption>'; }
+  function bar(title) { return '<div class="mac-bar"><i></i><i></i><i></i>' + title + '</div>'; }
+  var VISUALS = {
+    dmg:
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("Downloads") +
+        '<div class="mac-body"><div class="list-head">Today</div><div class="file-row hl">' + DISK + 'WiFiConnector.dmg<small>429 KB</small></div></div>' +
+      '</div></div>' + cap(1, "<b>Open WiFiConnector.dmg</b> from your Downloads.") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.2.0") +
+        '<div class="dmg-body"><div class="dmg-item">' + APP_TILE + 'WiFiConnector</div>' +
+        '<svg class="dmg-arrow" viewBox="0 0 70 34" aria-hidden="true"><path d="M4 26C20 4 46 4 62 22" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M54 21l9 2-2-9" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '<div class="dmg-item hl">' + FOLDER + 'Applications</div></div>' +
+      '</div></div>' + cap(2, "<b>Drag WiFiConnector onto Applications.</b> Then you can close the window and eject the disk.") + '</figure>',
+    gatekeeper:
+      '<figure><div class="vis-stage"><div class="dialog">' + SHIELD +
+        '<strong>“WiFiConnector” Not Opened</strong><p>Apple could not verify “WiFiConnector” is free of malware that may harm your Mac or compromise your privacy.</p>' +
+        '<span class="pill no">Move to Trash</span><span class="pill hl">Done</span>' +
+      '</div></div>' + cap(1, "Open the app from Applications. When this appears, click <b>Done</b>, not Move to Trash.") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("Privacy &amp; Security") +
+        '<div class="settings-mock"><div class="side"><span>Wi-Fi</span><span>Network</span><span>General</span><span class="on">Privacy &amp; Security</span><span>Desktop &amp; Dock</span></div>' +
+        '<div class="main"><strong>Security</strong><p>“WiFiConnector” was blocked to protect your Mac.</p><span class="mock-btn hl">Open Anyway</span></div></div>' +
+      '</div></div>' + cap(2, "Open <b>System Settings ▸ Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi"/></svg></span><span>Mon 23:54</span></div>' +
+        '<div class="mini-menu"><div class="head"><span class="dot warn"></span>No credentials saved</div><hr><div class="dim">Log In Now</div><div>Settings…</div></div></div>' +
+      '</div>' + cap(3, "Confirm with your password or Touch ID. The Wi-Fi icon appears in the menu bar, and from now on it opens normally.") + '</figure>',
+    menu:
+      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi-alert"/></svg></span><span>Mon 23:54</span></div>' +
+        '<div class="mini-menu"><div class="head"><span class="dot warn"></span>No credentials saved</div><hr><div class="dim">Log In Now</div><div class="dim">Log Out</div><hr><div class="hl">Settings…</div><div>Open Log</div></div></div>' +
+      '</div>' + cap(1, "Click the Wi-Fi icon in the menu bar, then <b>Settings…</b>") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector Settings") +
+        '<div class="mac-body form-mock"><label>Registration number<span class="field-mock">26BCE0000</span></label><label>Wi-Fi password<span class="field-mock">••••••••</span></label><span class="mock-btn blue hl" style="justify-self:end">Save</span></div>' +
+      '</div></div>' + cap(2, "Enter your registration number and Wi-Fi password, then <b>Save</b>. The password goes into your Keychain.") + '</figure>' +
+      '<figure><div class="vis-stage"><div class="vis-stack"><div class="mini-bar"><span class="tray"><svg class="ico"><use href="#i-wifi"/></svg></span><span>Mon 23:54</span></div>' +
+        '<div class="mini-menu"><div class="head"><span class="dot warn"></span>Background agent not installed</div><hr><div class="hl">Install Background Agent</div><div>Settings…</div><div class="hl"><svg class="ico"><use href="#i-check"/></svg>Start at Login</div></div></div>' +
+      '</div>' + cap(3, "Click <b>Install Background Agent</b> and tick <b>Start at Login</b>. The menu then says Online.") + '</figure>'
+  };
+
+  /* Get started ------------------------------------------------------------ */
+  var SETUP = {
+    terminal: [
+      { t: "Download it", p: "Copies the project to your Mac.", c: "git clone https://github.com/anujbajaj4/wificonnector.git && cd wificonnector", s: "git clone … && cd wificonnector" },
+      { t: "Save your details", p: "Your registration number, and your password straight into the Keychain.", c: "bin/wificonnector setup", s: "bin/wificonnector setup" },
+      { t: "Turn it on", p: "Starts the background helper that logs you in from now on.", c: "bin/wificonnector install", s: "bin/wificonnector install" }
+    ],
+    app: [
+      { t: "Download the app", p: "Open WiFiConnector.dmg and drag WiFiConnector onto Applications.", href: "https://github.com/anujbajaj4/wificonnector/releases/latest/download/WiFiConnector.dmg", s: "WiFiConnector.dmg", visual: "dmg" },
+      { t: "Open it once", p: "macOS asks you to confirm an app without a paid Developer ID. In System Settings, go to Privacy & Security and click Open Anyway.", note: "In System Settings", visual: "gatekeeper" },
+      { t: "Finish in the menu", p: "Click the Wi-Fi icon. Choose Settings… to save your details, then Install Background Agent and Start at Login.", note: "In the menu bar", visual: "menu" }
+    ]
+  };
+  var setupList = $("setup"), setupMode = "app";
+  function renderSetup() {
+    var done = store("wc-steps-" + setupMode) || [];
+    setupList.textContent = "";
+    SETUP[setupMode].forEach(function (step, i) {
+      var li = document.createElement("li");
+      li.className = "setup-step" + (done[i] ? " done" : "");
+      li.innerHTML = '<span class="step-n">' + (i + 1) + '</span><div><h3></h3><p></p></div><div class="setup-cmd"></div><label class="done-toggle"><input type="checkbox" id="setup-' + setupMode + "-" + i + '">Done</label>';
+      li.querySelector("h3").textContent = step.t;
+      li.querySelector("p").textContent = step.p;
+      var cmdCell = li.querySelector(".setup-cmd");
+      if (step.c) {
+        var b = document.createElement("button");
+        b.className = "cmd"; b.type = "button"; b.setAttribute("data-copy", step.c);
+        b.setAttribute("aria-label", "Copy: " + step.c);
+        b.innerHTML = '<span></span><svg class="ico"><use href="#i-copy"/></svg>';
+        b.querySelector("span").textContent = "$ " + step.s;
+        cmdCell.appendChild(b);
+      } else if (step.href) {
+        var a = document.createElement("a");
+        a.className = "cmd"; a.href = step.href; a.target = "_blank"; a.rel = "noopener";
+        a.innerHTML = '<span></span><svg class="ico"><use href="#i-download"/></svg>';
+        a.querySelector("span").textContent = step.s;
+        cmdCell.appendChild(a);
+      } else {
+        var note = document.createElement("span");
+        note.className = "muted"; note.style.fontSize = "15px";
+        note.textContent = step.note || "";
+        cmdCell.appendChild(note);
+      }
+      if (step.visual) {
+        var vis = document.createElement("div");
+        vis.className = "vis";
+        vis.innerHTML = VISUALS[step.visual];
+        li.appendChild(vis);
+      }
+      var box = li.querySelector("input");
+      box.checked = !!done[i];
+      box.addEventListener("change", function () {
+        done[i] = box.checked;
+        store("wc-steps-" + setupMode, done);
+        li.classList.toggle("done", box.checked);
+        updateProgress(done);
+        if (done.filter(Boolean).length === 3) showToast("All three steps done");
+      });
+      setupList.appendChild(li);
+    });
+    wireCopy(setupList);
+    updateProgress(done);
+  }
+  function updateProgress(done) {
+    var n = done.filter(Boolean).length;
+    $("setup-count").textContent = n + " of 3 done";
+    $("setup-bar").style.width = (n / 3 * 100) + "%";
+  }
+  segmented($("setup-tabs"), function (button) { setupMode = button.getAttribute("data-setup"); renderSetup(); });
+  renderSetup();
+
+  /* Privacy diagram -------------------------------------------------------- */
+  var PRIVACY = {
+    portal: "<b>VIT login page</b>: gets your registration number and password, and only after the redirect proves it's the hostel portal.",
+    mac: "<b>Your Mac</b>: holds your password in the login Keychain and keeps the log in ~/Library/Logs.",
+    servers: "<b>Our servers</b>: there aren't any. Nothing goes through a middleman.",
+    analytics: "<b>Analytics</b>: none. It doesn't count, track or report anything.",
+    ads: "<b>Ads</b>: none, ever. It's a free, open-source tool."
+  };
+  var pnodes = Array.prototype.slice.call(document.querySelectorAll(".pnode"));
+  function showPrivacy(node) {
+    pnodes.forEach(function (n) { n.classList.toggle("on", n === node); });
+    $("privacy-info").innerHTML = PRIVACY[node.getAttribute("data-info")];
+  }
+  pnodes.forEach(function (node) {
+    node.addEventListener("mouseenter", function () { showPrivacy(node); });
+    node.addEventListener("focus", function () { showPrivacy(node); });
+    node.addEventListener("click", function () { showPrivacy(node); });
+    node.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showPrivacy(node); } });
+  });
+  showPrivacy(pnodes[0]);
+})();
+</script>
+
+</body>
+</html>
