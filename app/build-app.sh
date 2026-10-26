@@ -26,6 +26,13 @@ xcrun swiftc -O -parse-as-library \
 cp "$here/../bin/wificonnector" "$app/Contents/Resources/wificonnector"
 chmod 755 "$app/Contents/Resources/wificonnector"
 
+# The asset catalog's PNGs are named like an .iconset, which iconutil turns
+# into the AppIcon.icns that Finder and the Dock show.
+iconset="$here/build/AppIcon.iconset"
+rm -rf "$iconset" && mkdir -p "$iconset"
+cp "$here"/WiFiConnector/Assets.xcassets/AppIcon.appiconset/icon_*.png "$iconset/"
+iconutil -c icns -o "$app/Contents/Resources/AppIcon.icns" "$iconset"
+
 # LSUIElement: a menu-bar app, with no Dock icon and no main menu.
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -34,6 +41,8 @@ cat > "$app/Contents/Info.plist" <<EOF
 <dict>
     <key>CFBundleExecutable</key>
     <string>WiFiConnector</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.wificonnector.app</string>
     <key>CFBundleName</key>
