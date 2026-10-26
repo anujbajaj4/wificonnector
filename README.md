@@ -1,5 +1,8 @@
 # wificonnector
 
+[![Downloads](https://img.shields.io/github/downloads/anujbajaj4/wificonnector/total)](https://github.com/anujbajaj4/wificonnector/releases)
+[![Latest release](https://img.shields.io/github/v/release/anujbajaj4/wificonnector)](https://github.com/anujbajaj4/wificonnector/releases/latest)
+
 Automatic login to **VIT hostel Wi-Fi on macOS**. Joining the hostel network
 puts you behind a Pronto Networks captive portal that asks for your
 registration number and password every time. wificonnector notices the portal
