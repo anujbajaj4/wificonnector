@@ -1034,6 +1034,7 @@ kbd.key {
           <li>Your details live in your login Keychain and one small settings file.</li>
           <li>Its log stays in <code>~/Library/Logs</code> and never leaves your Mac.</li>
           <li>The code is open, so anyone can check exactly what it does.</li>
+          <li>This website counts visits with GoatCounter, which uses no cookies and stores nothing about you. The app itself sends nothing anywhere.</li>
         </ul>
       </div>
     </div>
@@ -1648,7 +1649,7 @@ kbd.key {
     portal: "<b>VIT login page</b>: gets your registration number and password, and only after the redirect proves it's the hostel portal.",
     mac: "<b>Your Mac</b>: holds your password in the login Keychain and keeps the log in ~/Library/Logs.",
     servers: "<b>Our servers</b>: there aren't any. Nothing goes through a middleman.",
-    analytics: "<b>Analytics</b>: none. It doesn't count, track or report anything.",
+    analytics: "<b>Analytics</b>: the app sends none. This website counts visits with GoatCounter, without cookies or anything that identifies you.",
     ads: "<b>Ads</b>: none, ever. It's a free, open-source tool."
   };
   var pnodes = Array.prototype.slice.call(document.querySelectorAll(".pnode"));
@@ -1663,8 +1664,22 @@ kbd.key {
     node.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showPrivacy(node); } });
   });
   showPrivacy(pnodes[0]);
+
+  /* Download counting ------------------------------------------------------ */
+  // Each click on a .dmg link is a GoatCounter event named after where the
+  // button sits. Delegated, so it also covers the setup step's link, which is
+  // created by script. If an ad blocker stops GoatCounter, nothing happens.
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest('a[href*="WiFiConnector.dmg"]');
+    if (!link || !window.goatcounter || !window.goatcounter.count) return;
+    var place = link.closest(".hero") ? "hero" : link.closest("#get-started") ? "setup" : "section";
+    window.goatcounter.count({ path: "download-" + place, title: "Download .dmg", event: true });
+  });
 })();
 </script>
+
+<!-- Visit counting: GoatCounter, no cookies, no personal data. -->
+<script data-goatcounter="https://anujbajaj4.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 
 </body>
 </html>
