@@ -395,17 +395,17 @@ setup_saves_to_keychain() {
 }
 
 set_credentials_reads_stdin() {
-    printf '%s\n' 'p@ss w0rd&1' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials " 26bce0193" > "$SANDBOX/out" 2>&1
-    check "username normalized into config" grep -qx "USERNAME=26BCE0193" "$HOME/.config/wificonnector/config"
+    printf '%s\n' 'p@ss w0rd&1' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials " 26bce0000" > "$SANDBOX/out" 2>&1
+    check "username normalized into config" grep -qx "USERNAME=26BCE0000" "$HOME/.config/wificonnector/config"
     check "saved via security's prompt" \
-        grep -qx "add-generic-password -U -s wificonnector -a 26BCE0193 -l wificonnector (VIT Wi-Fi) -T /usr/bin/security -w" "$STUB_DIR/security_calls"
+        grep -qx "add-generic-password -U -s wificonnector -a 26BCE0000 -l wificonnector (VIT Wi-Fi) -T /usr/bin/security -w" "$STUB_DIR/security_calls"
     check "password typed twice on stdin" [ "$(cat "$STUB_DIR/security_stdin")" = "$(printf 'p@ss w0rd&1\np@ss w0rd&1')" ]
     check "password never in an argument" not grep -qF 'p@ss' "$STUB_DIR/security_calls"
     check "password never printed" not grep -qF 'p@ss' "$SANDBOX/out"
 }
 
 set_credentials_needs_a_password() {
-    printf '' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials 26BCE0193 > "$SANDBOX/out" 2>&1
+    printf '' | PATH="$STUBS:$PATH" "$TEST_BASH" "$SCRIPT" set-credentials 26BCE0000 > "$SANDBOX/out" 2>&1
     check "fails" [ $? -ne 0 ]
     check "saves nothing" [ "$(count "$STUB_DIR/security_calls")" = 0 ]
     check "says why" grep -q "no password" "$SANDBOX/out"
