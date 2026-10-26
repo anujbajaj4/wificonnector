@@ -2,6 +2,13 @@
 # Fake Keychain: STUB_PASSWORD is the saved password (unset = no item).
 printf '%s\n' "$*" >> "$STUB_DIR/security_calls"
 case $1 in
+    add-generic-password)
+        # With -w last, the real tool prompts; without a terminal it reads stdin.
+        for last; do :; done
+        if [ "$last" = "-w" ] && [ ! -t 0 ]; then
+            cat > "$STUB_DIR/security_stdin"
+        fi
+        ;;
     find-generic-password)
         [ -n "${STUB_PASSWORD+set}" ] || exit 44
         printf '%s\n' "$STUB_PASSWORD"

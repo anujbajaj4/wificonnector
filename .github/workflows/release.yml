@@ -1,0 +1,33 @@
+name: Release
+
+# Run from the Actions tab: Release ▸ Run workflow (on main). It publishes the
+# version in bin/wificonnector as a GitHub Release with WiFiConnector.dmg.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test with macOS's own bash
+        run: TEST_BASH=/bin/bash /bin/bash tests/run-tests.sh
+      - name: Build the app and disk image
+        run: app/package.sh
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^VERSION="\(.*\)"$/\1/p' bin/wificonnector)
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "::error::v$version is already released. Bump VERSION in bin/wificonnector first."
+            exit 1
+          fi
+          gh release create "v$version" app/build/WiFiConnector.dmg \
+            --target "$GITHUB_SHA" \
+            --title "WiFiConnector $version" \
+            --notes-file .github/release-notes.md

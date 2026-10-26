@@ -6,7 +6,8 @@ registration number and password every time. wificonnector notices the portal
 and logs you in, in the background, usually within a few seconds of
 connecting. It also logs you in again if the portal drops your session.
 
-It is one bash script plus a launchd agent: no app, no Xcode, no Java. The
+It comes as a menu-bar app you download, or as a single bash script for
+Terminal; both use the same engine and the same launchd background agent. The
 portal protocol comes from VinnovateIT's
 [Latch](https://github.com/vinnovateit/latch), which does the same job on
 Android, Windows and Linux.
@@ -22,10 +23,25 @@ Cloudflare's 1.1.1.1 app switched on.
 
 ## Requirements
 
-- macOS 12 or later (everything it uses ships with macOS)
+- The app: macOS 15 or later, on an Apple silicon or Intel Mac
+- The Terminal version: macOS 12 or later (everything it uses ships with macOS)
 - Your VIT registration number and hostel Wi-Fi password
 
-## Install
+## Install the app
+
+1. Download **WiFiConnector.dmg** from the
+   [latest release](https://github.com/anujbajaj4/wificonnector/releases/latest)
+   and open it.
+2. Drag **WiFiConnector** onto **Applications**.
+3. Open WiFiConnector from Applications. macOS says it can't verify the app,
+   because it isn't signed with a paid Apple Developer ID. Click **Done**.
+4. Open **System Settings ▸ Privacy & Security**, scroll down, and click
+   **Open Anyway** next to WiFiConnector. You only do this once.
+5. Click the Wi-Fi icon in the menu bar. Choose **Settings…** to save your
+   registration number and password, then **Install Background Agent**, and
+   tick **Start at Login**.
+
+## Install with Terminal
 
 ```sh
 git clone https://github.com/anujbajaj4/wificonnector.git
@@ -58,6 +74,7 @@ wificonnector logout         Log out and pause auto-login
 wificonnector logout --no-pause   Log out but keep auto-login running
 wificonnector status         Wi-Fi, portal, credentials and agent state
 wificonnector diagnose       Network details for troubleshooting, safe to share (no addresses)
+wificonnector pause | resume Hold or restart auto-login without logging out
 wificonnector install        Install or update the background agent
 wificonnector uninstall      Remove the agent (--purge also deletes credentials)
 ```
@@ -118,10 +135,25 @@ The tests replace `curl`, `security`, `ipconfig`, `networksetup`,
 `osascript` and `launchctl` with fakes, so they never touch your Keychain or
 network.
 
+## Menu-bar app
+
+The app's source is in [`app/`](app/README.md): a SwiftUI menu-bar app that
+shows whether you're online and lets you log in or out, pause auto-login and
+enter your credentials. To build it yourself, open
+`app/WiFiConnector.xcodeproj` in Xcode and press Run, or run `app/package.sh`
+to make the same `.dmg` the releases ship.
+
+### Releasing
+
+Bump `VERSION` in `bin/wificonnector`, merge to `main`, then run
+**Actions ▸ Release ▸ Run workflow**. It runs the tests, builds a universal
+`WiFiConnector.dmg` and publishes it as a GitHub Release. The download link
+`releases/latest/download/WiFiConnector.dmg` always points at the newest one.
+
 ## Roadmap
 
 - Academic-block Wi-Fi (a different portal; its protocol needs capturing first)
-- A native Swift menu-bar app
+- Move the menu-bar app's engine from the script into Swift, step by step
 
 ## License
 

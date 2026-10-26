@@ -1,0 +1,10 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# app/build-app.sh output
+app/build/
+
+# app/tools/make_icon.py preview
+app/tools/icon-preview.png

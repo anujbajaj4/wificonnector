@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Script tests (Linux, bash 5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint
+        run: shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/* app/*.sh
+      - name: Test
+        run: tests/run-tests.sh
+
+  macos:
+    name: macOS (bash 3.2 tests, app build)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test with macOS's own bash
+        # Homebrew's newer bash comes first on the runner's PATH; the script
+        # has to work with /bin/bash, which is 3.2.
+        run: |
+          /bin/bash --version | head -n 1
+          TEST_BASH=/bin/bash /bin/bash tests/run-tests.sh
+      - name: Build the app and disk image
+        run: app/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WiFiConnector-dmg
+          path: app/build/WiFiConnector.dmg
+          retention-days: 7
