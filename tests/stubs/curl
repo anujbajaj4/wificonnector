@@ -32,6 +32,14 @@ case $host in
         ;;
 esac
 
+# Without a default route (STUB_NO_ROUTE / STUB_ROUTE_AFTER, see the route
+# stub), only the local network answers: any named host fails to connect.
+if [ -n "${STUB_NO_ROUTE-}${STUB_ROUTE_AFTER-}" ] && [ ! -f "$STUB_DIR/route_up" ] && [ ! -f "$STUB_DIR/logged_in" ]; then
+    case $host in
+        *[!0-9.]*) echo "curl: (7) Failed to connect to $host port 80 after 0 ms: Couldn't connect to server" >&2; exit 7 ;;
+    esac
+fi
+
 rc=0 code=200 body="" location=""
 case $url in
     *generate_204)

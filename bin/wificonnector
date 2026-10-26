@@ -38,7 +38,15 @@ REJECT_BACKOFF_SECONDS=300
 # After a login the portal accepted but the internet check still failed,
 # auto-login waits this long. Online is still noticed meanwhile; this only
 # holds back logins (e.g. when the check fails for reasons the login can't fix).
-UNVERIFIED_BACKOFF_SECONDS=120
+UNVERIFIED_BACKOFF_SECONDS=60
+
+# Right after joining or waking, macOS can leave the Mac without a default
+# route for a while before it sends traffic out over the captive network. A
+# login through the gateway in that gap is a gamble (VIT's gateway answers 200
+# without logging anyone in), so first wait this many times this long for the
+# route to come back.
+ROUTE_WAIT_ATTEMPTS="${WIFICONNECTOR_ROUTE_WAIT_ATTEMPTS:-15}"
+ROUTE_WAIT_DELAY="${WIFICONNECTOR_ROUTE_WAIT_DELAY:-2}"
 
 # Any HTTP URL that answers 204 with an empty body on the open internet. A
 # captive portal intercepts it, which is how we notice the portal.
@@ -251,6 +259,19 @@ probe() {
     fi
 }
 
+has_default_route() {
+    route -n get default >/dev/null 2>&1
+}
+
+wait_for_route() {
+    local attempt=0
+    while ! has_default_route; do
+        attempt=$((attempt + 1))
+        [ "$attempt" -gt "$ROUTE_WAIT_ATTEMPTS" ] && return 1
+        sleep "$ROUTE_WAIT_DELAY"
+    done
+}
+
 # Before login the probe can fail outright instead of being redirected: every
 # lookup blocked (a custom DNS like 1.1.1.1), or the connection dropped on the
 # Mac itself (a VPN such as Cloudflare WARP, whose tunnel can't come up until
@@ -409,6 +430,13 @@ check_and_login() {
 
     use_network_dns "$device"
     probe
+    if [ "$PROBE_RESULT" = "error" ] && ! has_default_route; then
+        debug "No route to the internet yet; waiting for macOS to bring it up"
+        if wait_for_route; then
+            debug "Route is back; checking again"
+            probe
+        fi
+    fi
     case $PROBE_RESULT in
         online)
             transition online "Online ($device, $ip)"

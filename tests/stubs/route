@@ -1,6 +1,25 @@
 #!/bin/bash
-# Fake route -n get: STUB_VPN=1 sends everything but local addresses into a tunnel.
+# Fake route -n get. STUB_VPN=1 sends everything but local addresses into a
+# tunnel. For the default route: STUB_NO_ROUTE=1 means there is none (yet);
+# STUB_ROUTE_AFTER=N means none for the first N lookups, as right after a wake,
+# after which $STUB_DIR/route_up marks it as back.
+printf '%s\n' "$*" >> "$STUB_DIR/route_calls"
 target=${3:-}
+if [ "$target" = default ] && [ ! -f "$STUB_DIR/route_up" ]; then
+    if [ "${STUB_NO_ROUTE:-0}" = 1 ]; then
+        echo "route: writing to routing socket: not in table" >&2
+        exit 1
+    fi
+    if [ -n "${STUB_ROUTE_AFTER-}" ]; then
+        seen=$(( $(cat "$STUB_DIR/route_lookups" 2>/dev/null || echo 0) + 1 ))
+        echo "$seen" > "$STUB_DIR/route_lookups"
+        if [ "$seen" -le "$STUB_ROUTE_AFTER" ]; then
+            echo "route: writing to routing socket: not in table" >&2
+            exit 1
+        fi
+        : > "$STUB_DIR/route_up"
+    fi
+fi
 case $target in
     10.*|172.1[6-9].*|192.168.*) iface=en0 ;;
     *) if [ "${STUB_VPN:-0}" = 1 ]; then iface=utun4; else iface=en0; fi ;;
