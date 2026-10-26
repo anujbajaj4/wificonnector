@@ -60,7 +60,7 @@ main() {
 
     quit_running_app
 
-    say "Copying WiFiConnector to $apps…"
+    say "Copying WiFiConnector to ${apps}…"
     rm -rf "${apps:?}/$name"
     ditto "$mnt/$name" "$apps/$name"
     # Nothing should have set it, but if it is set macOS shows the warning.

@@ -16,6 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Lint
         run: shellcheck bin/wificonnector tests/run-tests.sh tests/stubs/* app/*.sh site/install.sh
+      - name: No $variable right before a non-ASCII character
+        # macOS's bash 3.2 reads bytes like the start of "…" as part of the
+        # name ("$apps…" becomes an unbound "apps\xe2"), so write ${apps}…
+        run: |
+          if grep -nP '\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]' bin/wificonnector site/install.sh app/*.sh tests/run-tests.sh tests/stubs/*; then
+            exit 1
+          fi
       - name: Test
         run: tests/run-tests.sh
 
