@@ -1,4 +1,8 @@
-Automatic login to VIT hostel Wi-Fi, from your Mac's menu bar. Needs macOS 15 or later; works on Apple silicon and Intel Macs.
+Automatic login to VIT hostel Wi-Fi, from your Mac's menu bar. Needs macOS 13 (Ventura) or later; works on Apple silicon and Intel Macs.
+
+## What's new in 0.4.0
+
+- **Runs on macOS 13 (Ventura) and 14 (Sonoma) too.** Until now the app needed macOS 15. The Settings window is now built the same way as the welcome window.
 
 ## What's new in 0.3.2
 

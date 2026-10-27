@@ -52,6 +52,10 @@ jobs:
           archs=$(lipo -archs "$app/Contents/MacOS/WiFiConnector")
           echo "Architectures: $archs"
           case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *) exit 1 ;; esac
+          # People on Ventura and Sonoma can install it too.
+          minimum=$(defaults read "$app/Contents/Info" LSMinimumSystemVersion)
+          echo "Needs macOS $minimum or later"
+          test "$minimum" = 13.0
           if xattr -rl "$app" | grep -q com.apple.quarantine; then
             echo "The installed app is quarantined"; exit 1
           fi

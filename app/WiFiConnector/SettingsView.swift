@@ -12,15 +12,25 @@ struct SettingsView: View {
     @State private var saving = false
 
     var body: some View {
-        Form {
-            Section {
-                TextField("Registration number", text: $user, prompt: Text("26BCE0000"))
-                SecureField("Wi-Fi password", text: $password)
-            } footer: {
-                Text("The password goes straight into your login Keychain.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 14) {
+            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
+                GridRow {
+                    Text("Registration number")
+                        .gridColumnAlignment(.trailing)
+                    TextField("Registration number", text: $user, prompt: Text("26BCE0000"))
+                        .labelsHidden()
+                }
+                GridRow {
+                    Text("Wi-Fi password")
+                    SecureField("Wi-Fi password", text: $password)
+                        .labelsHidden()
+                }
             }
+            .textFieldStyle(.roundedBorder)
+
+            Text("The password goes straight into your login Keychain.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             HStack {
                 Text(message)
@@ -35,8 +45,8 @@ struct SettingsView: View {
                     .disabled(user.isEmpty || password.isEmpty || saving)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: 400)
+        .padding(20)
+        .frame(width: 420)
         .onAppear { user = model.info.user }
     }
 

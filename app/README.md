@@ -18,7 +18,7 @@ The rest of this page is for building and changing it.
 
 ## Run it from Xcode
 
-You need macOS 15 or later and Xcode 16 or later.
+You need Xcode 16 or later. The app runs on macOS 13 or later.
 
 1. Open `app/WiFiConnector.xcodeproj` in Xcode.
 2. Press **Run** (⌘R). Nothing opens on screen: look for the Wi-Fi icon at the
@@ -94,11 +94,11 @@ without a permission dialog.
 
 - `LSUIElement = YES` in the Info.plist (set through the target's build
   settings in Xcode) hides the Dock icon and the app menu.
-- Such an app is never in front on its own, so "Settings…" calls
-  `NSApp.activate()` after opening the window, or it would open behind other
-  windows.
-- `.defaultLaunchBehavior(.suppressed)` keeps the Settings window from
-  opening at launch (macOS 15+).
+- The welcome and Settings windows are AppKit `NSWindow`s around SwiftUI
+  views (`AppWindow.swift`), not SwiftUI `Window` scenes. A scene didn't open
+  reliably at launch in a menu-bar app, and keeping one shut at launch needs
+  macOS 15. Such an app is never in front on its own, so `AppWindow` also
+  activates the app and orders the window to the front.
 - **Start at Login** uses `SMAppService.mainApp` (ServiceManagement), and the
   app shows up in System Settings ▸ General ▸ Login Items.
 
