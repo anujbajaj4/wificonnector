@@ -193,5 +193,6 @@ Bump `VERSION` in `bin/wificonnector`, merge to `main`, then run
 
 ## License
 
-MIT. See [LICENSE](LICENSE). The portal protocol is ported from
-[Latch](https://github.com/vinnovateit/latch) (MIT, © VinnovateIT).
+MIT, © 2026 Anuj Bajaj. See [LICENSE](LICENSE). The portal protocol is ported
+from [Latch](https://github.com/vinnovateit/latch) (MIT, © VinnovateIT); see
+[NOTICE](NOTICE).
