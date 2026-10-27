@@ -29,7 +29,7 @@ set up in its welcome window on the same Mac.
 
 ## Requirements
 
-- The app: macOS 15 or later, on an Apple silicon or Intel Mac
+- The app: macOS 13 (Ventura) or later, on an Apple silicon or Intel Mac
 - The script on its own: macOS 12 or later (everything it uses ships with macOS)
 - Your VIT registration number and hostel Wi-Fi password
 

@@ -6,7 +6,6 @@ import SwiftUI
 /// line, Button a clickable item, Toggle an item with a checkmark.
 struct MenuContent: View {
     @ObservedObject var model: StatusModel
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Text(model.info.headline)
@@ -35,8 +34,12 @@ struct MenuContent: View {
             Button("Update Background Agent") { model.installAgent() }
                 .disabled(model.busy)
         }
-        Button("Set Up…") { WelcomeWindow.shared.show(model: model) }
-        Button("Settings…") { open("settings") }
+        Button("Set Up…") {
+            AppWindow.welcome.show { close in WelcomeView(model: model, close: close) }
+        }
+        Button("Settings…") {
+            AppWindow.settings.show { _ in SettingsView(model: model) }
+        }
             .keyboardShortcut(",")
         Button("Open Log") { model.openLog() }
         Toggle("Start at Login", isOn: Binding(
@@ -48,12 +51,5 @@ struct MenuContent: View {
 
         Button("Quit WiFiConnector") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
-    }
-
-    /// A menu-bar app has no Dock icon and is never the active app on its own,
-    /// so it has to bring itself forward or the window opens behind others.
-    private func open(_ window: String) {
-        openWindow(id: window)
-        NSApp.activate()
     }
 }

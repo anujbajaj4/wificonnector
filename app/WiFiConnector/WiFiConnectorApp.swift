@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 /// A menu-bar app: an icon in the top bar with a menu, a welcome window that
-/// opens until setup is done (see WelcomeWindow), and a Settings window
-/// opened from the menu. There's no Dock icon or main window because the
+/// opens until setup is done, and a Settings window opened from the menu
+/// (both in AppWindow). There's no Dock icon or main window because the
 /// Info.plist sets LSUIElement (see the target's build settings).
 @main
 struct WiFiConnectorApp: App {
@@ -17,13 +17,5 @@ struct WiFiConnectorApp: App {
             Image(systemName: model.symbol)
         }
         .menuBarExtraStyle(.menu)
-
-        Window("WiFiConnector Settings", id: "settings") {
-            SettingsView(model: model)
-        }
-        .windowResizability(.contentSize)
-        // Only open when asked from the menu, not at launch.
-        .defaultLaunchBehavior(.suppressed)
-        .restorationBehavior(.disabled)
     }
 }

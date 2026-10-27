@@ -31,8 +31,8 @@ main() {
     local version major
     version=$(sw_vers -productVersion)
     major=${version%%.*}
-    if [ "$major" -lt 15 ]; then
-        fail "The app needs macOS 15 or later, and this Mac has macOS $version.
+    if [ "$major" -lt 13 ]; then
+        fail "The app needs macOS 13 (Ventura) or later, and this Mac has macOS $version.
   The script on its own works on macOS 12 and later:
   https://github.com/anujbajaj4/wificonnector#install-only-the-script"
     fi
