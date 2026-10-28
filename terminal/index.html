@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WIFI Terminal</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..800&display=swap">
+<style>
+/* Layout: a market terminal. Command line, function keys and a ticker on top;
+   below, dense panels on a hairline grid, the most watched numbers first.
+   One deliberate look, dark only, like the screen it borrows from. */
+:root {
+  --black: #000000;
+  --amber: #FF9F1C;      /* labels and the terminal's own voice */
+  --amber-dim: #A86412;
+  --white: #ECECEC;      /* values */
+  --yellow: #FFD60A;     /* input, focus, anything new */
+  --bar: #1A2B4C;        /* panel title bars */
+  --bar-ink: #DCE6FF;
+  --rule: #2A2A2A;
+  --up: #2FD27A;
+  --down: #FF5050;
+  --mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--black); }
+body {
+  margin: 0; color: var(--amber);
+  font: 400 13px/1.45 var(--mono); font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--yellow); outline-offset: 1px; }
+.wrap { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+
+/* Top: command line and clock */
+.top {
+  position: sticky; top: 0; z-index: 5; background: var(--black);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.cmdline { display: flex; align-items: center; gap: 12px; padding-block: 8px; border-bottom: 1px solid var(--rule); }
+.cmd { display: flex; align-items: center; flex: 1; min-width: 0; gap: 8px; }
+.cmd label { color: var(--amber-dim); white-space: nowrap; }
+.cmd input {
+  flex: 1; min-width: 0; padding: 4px 8px; border: 0; border-radius: 0;
+  background: #141414; color: var(--yellow); font: 600 14px/1.2 var(--mono); font-stretch: 87.5%;
+  text-transform: uppercase; caret-color: var(--yellow);
+}
+.go { padding: 4px 10px; border: 0; background: var(--yellow); color: var(--black); font-weight: 700; cursor: pointer; }
+.clock { color: var(--white); white-space: nowrap; }
+.live { white-space: nowrap; }
+.live i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--up); vertical-align: 1px; }
+.live.stale i { background: var(--down); }
+.live.loading i { background: var(--yellow); }
+
+.fkeys { display: flex; gap: 2px; padding-block: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--rule); }
+.fkeys::-webkit-scrollbar { display: none; }
+.fkey {
+  flex: none; display: inline-flex; gap: 6px; padding: 3px 9px; border: 0;
+  background: #121212; color: var(--white); cursor: pointer; white-space: nowrap;
+}
+.fkey b { color: var(--black); background: var(--amber); padding: 0 4px; font-weight: 700; }
+.fkey:hover { background: #1E1E1E; }
+
+/* The ticker: the one thing that moves on its own */
+.tape { overflow: hidden; border-bottom: 1px solid var(--rule); background: #050505; }
+.tape-track { display: flex; width: max-content; animation: tape 60s linear infinite; }
+.tape:hover .tape-track { animation-play-state: paused; }
+.tape-run { display: flex; gap: 28px; padding: 6px 14px; white-space: nowrap; }
+.tick b { color: var(--white); font-weight: 600; }
+.tick .up { color: var(--up); }
+.tick .down { color: var(--down); }
+@keyframes tape { to { transform: translateX(-50%); } }
+
+/* Panels */
+.grid {
+  display: grid; gap: 1px; margin-block: 10px 24px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  background: var(--rule); border: 1px solid var(--rule);
+}
+.panel { background: var(--black); min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 110px; }
+.panel.flash { animation: flashpanel 1.2s ease-out; }
+@keyframes flashpanel { from { box-shadow: inset 0 0 0 2px var(--yellow); } }
+.span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-7 { grid-column: span 7; }
+.span-8 { grid-column: span 8; } .span-6 { grid-column: span 6; } .span-12 { grid-column: span 12; }
+.bar {
+  display: flex; align-items: baseline; gap: 10px; padding: 3px 8px;
+  background: var(--bar); color: var(--bar-ink); font-weight: 600; font-stretch: 100%;
+}
+.bar .code { color: var(--yellow); }
+.bar .src { margin-left: auto; color: #8FA3CC; font-weight: 400; font-size: 11px; }
+.body { padding: 10px; display: grid; gap: 12px; align-content: start; }
+.err { color: var(--down); }
+.muted { color: var(--amber-dim); }
+.v { color: var(--white); }
+.big { font: 700 clamp(40px, 6vw, 68px)/1 var(--mono); font-stretch: 75%; color: var(--white); letter-spacing: -0.02em; }
+.mid { font: 600 26px/1 var(--mono); font-stretch: 80%; color: var(--white); }
+.chg.up { color: var(--up); } .chg.down { color: var(--down); }
+.chg { white-space: nowrap; }
+.flashnum.upflash { animation: upflash 1.4s ease-out; }
+.flashnum.downflash { animation: downflash 1.4s ease-out; }
+@keyframes upflash { from { background: rgba(47, 210, 122, 0.45); } }
+@keyframes downflash { from { background: rgba(255, 80, 80, 0.45); } }
+
+.kv { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 12px; align-items: baseline; }
+.kv dt { color: var(--amber); }
+.kv dd { margin: 0; color: var(--white); text-align: right; grid-column: 3; }
+.kv .fill { border-bottom: 1px dotted var(--rule); align-self: center; }
+
+table { width: 100%; border-collapse: collapse; }
+th { color: var(--amber-dim); font-weight: 400; text-align: right; padding: 2px 6px; border-bottom: 1px solid var(--rule); }
+td { color: var(--white); text-align: right; padding: 3px 6px; border-bottom: 1px solid #141414; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+td.lbl { color: var(--amber); }
+.hbar { display: inline-block; height: 9px; background: var(--amber); vertical-align: 0; }
+.hbar.latest { background: var(--yellow); }
+
+.headline { display: flex; flex-wrap: wrap; align-items: end; gap: 6px 18px; }
+.stat { display: grid; gap: 2px; }
+.stat span { color: var(--amber-dim); }
+
+/* Funnel: each stage's bar is its share of visits */
+.funnel { display: grid; gap: 6px; }
+.stage { display: grid; grid-template-columns: 14ch 1fr 7ch 7ch; gap: 8px; align-items: center; }
+.stage .track { height: 14px; background: #121212; }
+.stage .track i { display: block; height: 100%; background: var(--amber); }
+.stage .n { color: var(--white); text-align: right; }
+.stage .pct { color: var(--amber-dim); text-align: right; }
+
+/* Comments */
+.feed { display: grid; gap: 0; max-height: 420px; overflow-y: auto; }
+.c { padding: 7px 0; border-bottom: 1px solid #161616; display: grid; gap: 3px; }
+.c header { display: flex; gap: 10px; flex-wrap: wrap; }
+.c .who { color: var(--white); font-weight: 600; }
+.c .op { color: var(--black); background: var(--amber); padding: 0 4px; }
+.c .new { color: var(--black); background: var(--yellow); padding: 0 4px; font-weight: 700; }
+.c p { margin: 0; color: #D6D6D6; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-stretch: 100%; font-size: 12.5px; line-height: 1.5; max-width: 72ch; }
+.c a { color: var(--amber-dim); text-decoration: none; }
+.c a:hover { color: var(--yellow); }
+
+/* Visits chart */
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--amber-dim); font: 400 10px var(--mono); }
+.chart .col { fill: var(--amber); }
+.chart .col.today { fill: var(--yellow); }
+.chart .grid-line { stroke: #1C1C1C; }
+
+.health { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+.pill { padding: 0 6px; color: var(--black); font-weight: 700; }
+.pill.ok { background: var(--up); } .pill.bad { background: var(--down); } .pill.wait { background: var(--yellow); }
+
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; padding-block: 0 20px; color: var(--amber-dim); }
+
+/* Sign-in */
+.login { min-height: 70vh; display: grid; align-content: center; justify-items: start; gap: 14px; max-width: 60ch; margin-inline: auto; }
+.login h1 { margin: 0; font: 700 clamp(28px, 5vw, 44px)/1.05 var(--mono); font-stretch: 75%; color: var(--white); }
+.login p { margin: 0; }
+.login form { display: flex; gap: 8px; width: 100%; }
+.login input { flex: 1; min-width: 0; padding: 8px 10px; border: 0; background: #141414; color: var(--yellow); font: 600 15px var(--mono); }
+
+@media (max-width: 1100px) {
+  .span-4, .span-5, .span-7, .span-8 { grid-column: span 6; }
+}
+@media (max-width: 720px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .panel { grid-column: 1 / -1 !important; }
+  .cmd label { display: none; }
+  .clock .date { display: none; }
+  .stage { grid-template-columns: 12ch 1fr 5ch 6ch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tape-track { animation: none; }
+  .tape { overflow-x: auto; }
+  .flashnum, .panel.flash { animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="top wrap">
+  <div class="cmdline">
+    <form class="cmd" id="cmd-form" autocomplete="off">
+      <label for="cmd">WIFI &lt;GO&gt;</label>
+      <input id="cmd" name="cmd" spellcheck="false" placeholder="DL, WEB, RDT, CMT, GH or HELP" aria-label="Command">
+      <button class="go" type="submit">GO</button>
+    </form>
+    <span class="live loading" id="live"><i></i><span id="live-text">Connecting</span></span>
+    <span class="clock" id="clock">—</span>
+  </div>
+  <nav class="fkeys" aria-label="Panels">
+    <button class="fkey" type="button" data-go="DL"><b>1</b>DL Downloads</button>
+    <button class="fkey" type="button" data-go="FUN"><b>2</b>FUN Funnel</button>
+    <button class="fkey" type="button" data-go="RDT"><b>3</b>RDT Reddit</button>
+    <button class="fkey" type="button" data-go="CMT"><b>4</b>CMT Comments</button>
+    <button class="fkey" type="button" data-go="WEB"><b>5</b>WEB Visits</button>
+    <button class="fkey" type="button" data-go="GH"><b>6</b>GH GitHub</button>
+    <button class="fkey" type="button" data-go="R"><b>R</b>Refresh</button>
+  </nav>
+  <div class="tape" aria-label="Ticker">
+    <div class="tape-track" id="tape"><div class="tape-run"><span class="tick">Loading quotes…</span></div></div>
+  </div>
+</div>
+
+<main class="wrap" id="app" hidden>
+  <div class="grid">
+    <section class="panel span-5" id="p-DL" aria-labelledby="t-dl">
+      <div class="bar"><span class="code">DL</span><span id="t-dl">Downloads</span><span class="src">GitHub releases</span></div>
+      <div class="body">
+        <div class="headline">
+          <div class="big flashnum" id="dl-total">—</div>
+          <div class="stat"><span>Since last look</span><b class="chg" id="dl-delta">—</b></div>
+          <div class="stat"><span>Test installs (est.)</span><b class="v" id="dl-tests">—</b></div>
+        </div>
+        <table id="dl-table" aria-label="Downloads by version">
+          <thead><tr><th>Version</th><th>Released</th><th>Downloads</th><th style="width:40%"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="err" id="dl-err" hidden></p>
+      </div>
+    </section>
+
+    <section class="panel span-7" id="p-FUN" aria-labelledby="t-fun">
+      <div class="bar"><span class="code">FUN</span><span id="t-fun">Install funnel</span><span class="src">GoatCounter + GitHub, since launch</span></div>
+      <div class="body">
+        <div class="funnel" id="funnel"></div>
+        <p class="muted">Each bar is a share of website visits. Downloads also include installs from links shared outside the site, so the last step can exceed the one before it.</p>
+        <p class="err" id="fun-err" hidden></p>
+      </div>
+    </section>
+
+    <section class="panel span-5" id="p-RDT" aria-labelledby="t-rdt">
+      <div class="bar"><span class="code">RDT</span><span id="t-rdt">Reddit launch post</span><span class="src">Reddit</span></div>
+      <div class="body">
+        <a class="v" id="rdt-title" href="#" target="_blank" rel="noopener">—</a>
+        <div class="headline">
+          <div class="stat"><span>Upvotes</span><b class="mid flashnum" id="rdt-score">—</b></div>
+          <div class="stat"><span>Upvoted</span><b class="mid" id="rdt-ratio">—</b></div>
+          <div class="stat"><span>Comments</span><b class="mid flashnum" id="rdt-comments">—</b></div>
+        </div>
+        <dl class="kv" id="rdt-kv"></dl>
+        <p class="muted" id="rdt-views"></p>
+        <p class="err" id="rdt-err" hidden></p>
+      </div>
+    </section>
+
+    <section class="panel span-7" id="p-CMT" aria-labelledby="t-cmt">
+      <div class="bar"><span class="code">CMT</span><span id="t-cmt">Comments, newest first</span><span class="src" id="cmt-count"></span></div>
+      <div class="body">
+        <div class="feed" id="feed"><p class="muted">No comments yet.</p></div>
+      </div>
+    </section>
+
+    <section class="panel span-8" id="p-WEB" aria-labelledby="t-web">
+      <div class="bar"><span class="code">WEB</span><span id="t-web">Website visits by day</span><span class="src">GoatCounter</span></div>
+      <div class="body">
+        <div class="headline">
+          <div class="stat"><span>Visits since launch</span><b class="mid flashnum" id="web-total">—</b></div>
+          <div class="stat"><span>Today</span><b class="mid" id="web-today">—</b></div>
+          <div class="stat"><span>Since last look</span><b class="chg" id="web-delta">—</b></div>
+        </div>
+        <div class="chart" id="web-chart"></div>
+        <p class="err" id="web-err" hidden></p>
+      </div>
+    </section>
+
+    <section class="panel span-4" id="p-REF" aria-labelledby="t-ref">
+      <div class="bar"><span class="code">REF</span><span id="t-ref">Where visitors come from</span></div>
+      <div class="body">
+        <table id="ref-table"><thead><tr><th>Source</th><th>Visits</th></tr></thead><tbody></tbody></table>
+        <p class="muted">"(unknown)" is mostly links opened inside WhatsApp, Instagram and other apps.</p>
+      </div>
+    </section>
+
+    <section class="panel span-12" id="p-GH" aria-labelledby="t-gh">
+      <div class="bar"><span class="code">GH</span><span id="t-gh">GitHub and health</span><span class="src">GitHub</span></div>
+      <div class="body">
+        <div class="health" id="health"></div>
+        <p class="err" id="gh-err" hidden></p>
+      </div>
+    </section>
+  </div>
+  <div class="foot">
+    <span id="foot-updated">—</span>
+    <span>Refreshes every minute. Type HELP for commands.</span>
+    <button class="fkey" type="button" id="signout">Sign out</button>
+  </div>
+</main>
+
+<section class="login wrap" id="login" hidden>
+  <h1>WIFI Terminal</h1>
+  <p>Enter the access key you set on Vercel as <span class="v">ACCESS_KEY</span>.</p>
+  <form id="login-form" autocomplete="off">
+    <input id="key" name="key" type="password" aria-label="Access key" placeholder="Access key">
+    <button class="go" type="submit">GO</button>
+  </form>
+  <p class="err" id="login-err" hidden></p>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var REFRESH_MS = 60000;
+  var KEY = "wct-key", BASE = "wct-baseline", SEEN = "wct-seen";
+
+  function load(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function drop(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+  var fmt = new Intl.NumberFormat("en-IN");
+  function n(x) { return x == null ? "—" : fmt.format(x); }
+  function ago(iso) {
+    var s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+    if (s < 60) return Math.round(s) + "s ago";
+    if (s < 3600) return Math.round(s / 60) + "m ago";
+    if (s < 86400) return Math.round(s / 3600) + "h ago";
+    return Math.round(s / 86400) + "d ago";
+  }
+  function ist(d, withDate) {
+    return d.toLocaleString("en-GB", Object.assign({ timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false },
+      withDate ? { day: "2-digit", month: "short" } : {}));
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  /* Clock, in VIT's time zone */
+  function tickClock() {
+    var now = new Date();
+    $("clock").innerHTML = "";
+    $("clock").append(el("span", "date", now.toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short" }).toUpperCase() + " "),
+      document.createTextNode(now.toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour12: false }) + " IST"));
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  /* Sign-in */
+  var key = load(KEY);
+  function showLogin(message) {
+    $("app").hidden = true; $("login").hidden = false;
+    setLive("stale", "Signed out");
+    $("login-err").hidden = !message; $("login-err").textContent = message || "";
+    $("key").focus();
+  }
+  $("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    key = $("key").value.trim();
+    if (!key) return;
+    save(KEY, key); $("key").value = "";
+    refresh();
+  });
+  $("signout").addEventListener("click", function () { drop(KEY); key = null; showLogin(); });
+
+  /* Fetching */
+  var data = null, last = null, baseline = load(BASE), timer = null;
+  function setLive(state, text) { $("live").className = "live " + state; $("live-text").textContent = text; }
+
+  function refresh() {
+    if (!key) { showLogin(); return; }
+    setLive("loading", "Updating");
+    fetch("/api/stats", { headers: { "x-access-key": key }, cache: "no-store" })
+      .then(function (r) {
+        if (r.status === 401) { drop(KEY); key = null; showLogin("That key wasn't accepted. Check ACCESS_KEY on Vercel."); throw null; }
+        if (!r.ok) throw new Error("The stats service answered " + r.status);
+        return r.json();
+      })
+      .then(function (body) {
+        last = data; data = body;
+        $("login").hidden = true; $("app").hidden = false;
+        render();
+        setLive("", "Live");
+      })
+      .catch(function (err) { if (err) setLive("stale", "Offline: showing last data"); });
+    clearTimeout(timer); timer = setTimeout(refresh, REFRESH_MS);
+  }
+
+  /* "Since last look": a snapshot saved when you leave, compared when you're back */
+  function snapshot() {
+    if (!data) return null;
+    var g = data.github.ok ? data.github.data : {}, v = data.visits.ok ? data.visits.data : {}, r = data.reddit.ok ? data.reddit.data : {};
+    return { at: data.updated, downloads: g.downloads, visits: v.visits, score: r.score, comments: r.comments };
+  }
+  function keepBaseline() {
+    var s = snapshot();
+    if (s) save(BASE, s);
+    if (data && data.reddit.ok) save(SEEN, data.reddit.data.latest.map(function (c) { return c.id; }));
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") keepBaseline(); else refresh();
+  });
+  window.addEventListener("pagehide", keepBaseline);
+
+  function delta(now, field) {
+    if (!baseline || baseline[field] == null || now == null) return null;
+    return now - baseline[field];
+  }
+  function showDelta(node, d) {
+    node.className = "chg" + (d > 0 ? " up" : d < 0 ? " down" : "");
+    node.textContent = d == null ? "First look" : (d > 0 ? "▲ " + n(d) : d < 0 ? "▼ " + n(-d) : "No change");
+    if (d != null && baseline) node.title = "Since " + ist(new Date(baseline.at), true) + " IST";
+  }
+  function setNum(node, value, prev) {
+    node.textContent = n(value);
+    if (prev != null && value != null && prev !== value) {
+      node.classList.remove("upflash", "downflash"); void node.offsetWidth;
+      node.classList.add(value > prev ? "upflash" : "downflash");
+    }
+  }
+  function errorFor(id, source) { $(id).hidden = source.ok; $(id).textContent = source.ok ? "" : "Couldn't load: " + source.error; }
+  function prevOf(path) {
+    if (!last) return null;
+    var o = last; for (var i = 0; i < path.length; i++) { if (!o) return null; o = o[path[i]]; }
+    return o;
+  }
+
+  /* Rendering */
+  function render() {
+    renderDownloads(); renderFunnel(); renderReddit(); renderVisits(); renderGitHub(); renderTape();
+    $("foot-updated").textContent = "Data from " + ist(new Date(data.updated), true) + " IST";
+  }
+
+  function renderDownloads() {
+    var src = data.github; errorFor("dl-err", src);
+    if (!src.ok) return;
+    var g = src.data;
+    setNum($("dl-total"), g.downloads, prevOf(["github", "data", "downloads"]));
+    showDelta($("dl-delta"), delta(g.downloads, "downloads"));
+    $("dl-tests").textContent = "~" + n(g.testInstalls);
+    $("dl-tests").title = "GitHub's own tests install the latest release on every run; each counts as a download.";
+    var tbody = $("dl-table").tBodies[0]; tbody.textContent = "";
+    var max = Math.max.apply(null, g.versions.map(function (v) { return v.downloads; }).concat([1]));
+    g.versions.forEach(function (v, i) {
+      var tr = el("tr");
+      tr.append(el("td", "lbl", v.tag), el("td", "", ist(new Date(v.published), true)), el("td", "", n(v.downloads)));
+      var cell = el("td"); var b = el("span", "hbar" + (i === 0 ? " latest" : ""));
+      b.style.width = (v.downloads / max * 100) + "%"; cell.style.textAlign = "left"; cell.append(b); tr.append(cell);
+      tbody.append(tr);
+    });
+  }
+
+  function renderFunnel() {
+    var v = data.visits, g = data.github;
+    errorFor("fun-err", v);
+    var box = $("funnel"); box.textContent = "";
+    if (!v.ok) return;
+    var f = v.data.funnel;
+    var stages = [
+      ["Visits", f.visits],
+      ["Download btn", f.downloadButton],
+      ["Copied cmd", f.commandCopies],
+      [".dmg clicks", f.dmgClicks],
+      ["Downloads", g.ok ? Math.max(0, g.data.downloads - g.data.testInstalls) : null],
+    ];
+    stages.forEach(function (s) {
+      var row = el("div", "stage");
+      var share = f.visits ? Math.min(1, (s[1] || 0) / f.visits) : 0;
+      var track = el("div", "track"); var fill = el("i"); fill.style.width = (share * 100) + "%"; track.append(fill);
+      row.append(el("span", "", s[0]), track, el("span", "n", n(s[1])), el("span", "pct", f.visits ? (s[1] / f.visits * 100).toFixed(1) + "%" : "—"));
+      box.append(row);
+    });
+  }
+
+  function renderReddit() {
+    var src = data.reddit; errorFor("rdt-err", src);
+    if (!src.ok) return;
+    var r = src.data;
+    $("rdt-title").textContent = r.title; $("rdt-title").href = r.url;
+    setNum($("rdt-score"), r.score, prevOf(["reddit", "data", "score"]));
+    $("rdt-ratio").textContent = Math.round(r.upvoteRatio * 100) + "%";
+    setNum($("rdt-comments"), r.comments, prevOf(["reddit", "data", "comments"]));
+    var hours = Math.max(1, (Date.now() - new Date(r.created)) / 3600000);
+    var kv = $("rdt-kv"); kv.textContent = "";
+    [["Posted", ist(new Date(r.created), true) + " IST (" + ago(r.created) + ")"],
+     ["Upvotes an hour", (r.score / hours).toFixed(1)],
+     ["Upvotes since last look", (function () { var d = delta(r.score, "score"); return d == null ? "First look" : (d >= 0 ? "+" : "") + d; })()],
+     ["Subreddit", r.subreddit]].forEach(function (pair) {
+      kv.append(el("dt", "", pair[0]), el("span", "fill"), el("dd", "", pair[1]));
+    });
+    $("rdt-views").textContent = r.views != null ? "Views: " + n(r.views)
+      : "Reddit shows views only to you: open the post and tap its insights.";
+
+    var seen = load(SEEN) || [];
+    var feed = $("feed"); feed.textContent = "";
+    var fresh = 0;
+    r.latest.forEach(function (c) {
+      var isNew = seen.length > 0 && seen.indexOf(c.id) === -1;
+      if (isNew) fresh++;
+      var item = el("article", "c");
+      var head = el("header");
+      head.append(el("span", "who", "u/" + c.author));
+      if (c.byOp) head.append(el("span", "op", "YOU"));
+      if (isNew) head.append(el("span", "new", "NEW"));
+      if (c.depth) head.append(el("span", "muted", "reply"));
+      head.append(el("span", "muted", ago(c.created)), el("span", "muted", "▲" + c.score));
+      var link = el("a", "", "Reply on Reddit"); link.href = c.url; link.target = "_blank"; link.rel = "noopener";
+      head.append(link);
+      item.append(head, el("p", "", c.body));
+      feed.append(item);
+    });
+    if (!r.latest.length) feed.append(el("p", "muted", "No comments yet."));
+    $("cmt-count").textContent = fresh ? fresh + " new since last look" : r.comments + " total";
+  }
+
+  function renderVisits() {
+    var src = data.visits; errorFor("web-err", src);
+    var refBody = $("ref-table").tBodies[0]; refBody.textContent = "";
+    if (!src.ok) { $("web-chart").textContent = ""; return; }
+    var v = src.data;
+    setNum($("web-total"), v.visits, prevOf(["visits", "data", "visits"]));
+    var today = v.days.length ? v.days[v.days.length - 1].visits : 0;
+    $("web-today").textContent = n(today);
+    showDelta($("web-delta"), delta(v.visits, "visits"));
+    drawDays(v.days);
+    v.referrers.forEach(function (ref) {
+      var tr = el("tr"); tr.append(el("td", "lbl", ref.name), el("td", "", n(ref.count))); refBody.append(tr);
+    });
+  }
+
+  function drawDays(days) {
+    var box = $("web-chart"); box.textContent = "";
+    if (!days.length) return;
+    // Drawn at the box's own width, so labels stay readable on a phone.
+    var W = Math.max(300, Math.round(box.clientWidth || 640)), H = Math.round(Math.min(220, Math.max(150, W * 0.3))), padL = 34, padB = 20, padT = 8;
+    var max = Math.max.apply(null, days.map(function (d) { return d.visits; }).concat([1]));
+    var step = Math.pow(10, Math.floor(Math.log10(max))); var top = Math.ceil(max / step) * step;
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Visits per day since launch");
+    function add(tag, attrs, text) { var e = document.createElementNS(ns, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; svg.append(e); return e; }
+    [0, 0.5, 1].forEach(function (f) {
+      var y = padT + (H - padT - padB) * (1 - f);
+      add("line", { class: "grid-line", x1: padL, x2: W, y1: y, y2: y });
+      add("text", { x: padL - 6, y: y + 3, "text-anchor": "end" }, n(Math.round(top * f)));
+    });
+    var bw = (W - padL) / days.length, cw = Math.min(bw * 0.7, 36);
+    days.forEach(function (d, i) {
+      var h = (H - padT - padB) * (d.visits / top);
+      var x = padL + i * bw + (bw - cw) / 2;
+      var rect = add("rect", { class: "col" + (i === days.length - 1 ? " today" : ""), x: x, y: H - padB - h, width: cw, height: Math.max(h, 0.5) });
+      var t = document.createElementNS(ns, "title"); t.textContent = d.day + ": " + n(d.visits) + " visits"; rect.append(t);
+      if (days.length <= 14 || i % Math.ceil(days.length / 10) === 0 || i === days.length - 1) {
+        add("text", { x: x + cw / 2, y: H - 6, "text-anchor": "middle" }, d.day.slice(8) + "/" + d.day.slice(5, 7));
+      }
+    });
+    box.append(svg);
+  }
+
+  function renderGitHub() {
+    var src = data.github; errorFor("gh-err", src);
+    var box = $("health"); box.textContent = "";
+    if (!src.ok) return;
+    var g = src.data, latest = g.versions[0];
+    function item(label, value, pill) {
+      var s = el("span"); s.append(el("span", "", label + " "));
+      var v = el("b", pill ? "pill " + pill : "v", value); s.append(v); box.append(s);
+    }
+    item("Latest", latest ? latest.tag + " (" + ago(latest.published) + ")" : "—");
+    item("Stars", n(g.stars)); item("Forks", n(g.forks)); item("Watchers", n(g.watchers));
+    item("Open issues + PRs", n(g.openIssues));
+    if (g.ci) {
+      var state = g.ci.status !== "completed" ? ["wait", "RUNNING"] : g.ci.conclusion === "success" ? ["ok", "PASSING"] : ["bad", (g.ci.conclusion || "FAILED").toUpperCase()];
+      item("Tests on main", state[1], state[0]);
+    }
+  }
+
+  function renderTape() {
+    var g = data.github.ok ? data.github.data : null, v = data.visits.ok ? data.visits.data : null, r = data.reddit.ok ? data.reddit.data : null;
+    var ticks = [];
+    function tick(sym, value, d) { ticks.push([sym, value, d]); }
+    if (g) {
+      tick("WIFI DLS", n(g.downloads), delta(g.downloads, "downloads"));
+      g.versions.slice(0, 3).forEach(function (ver) { tick(ver.tag.toUpperCase(), n(ver.downloads)); });
+      tick("STARS", n(g.stars));
+    }
+    if (r) {
+      tick("RDT UPV", n(r.score), delta(r.score, "score"));
+      tick("RDT RATIO", Math.round(r.upvoteRatio * 100) + "%");
+      tick("RDT CMTS", n(r.comments), delta(r.comments, "comments"));
+    }
+    if (v) {
+      tick("WEB VISITS", n(v.visits), delta(v.visits, "visits"));
+      tick("CMD COPIES", n(v.funnel.commandCopies));
+    }
+    var track = $("tape"); track.textContent = "";
+    for (var copy = 0; copy < 2; copy++) {
+      var run = el("div", "tape-run"); if (copy) run.setAttribute("aria-hidden", "true");
+      ticks.forEach(function (t) {
+        var s = el("span", "tick"); s.append(el("span", "", t[0] + " "), el("b", "", t[1]));
+        if (t[2]) s.append(el("span", t[2] > 0 ? "up" : "down", (t[2] > 0 ? " ▲" : " ▼") + Math.abs(t[2])));
+        run.append(s);
+      });
+      track.append(run);
+    }
+  }
+
+  /* Commands: type a code and press GO, or use the keys above */
+  var CODES = { DL: "p-DL", FUN: "p-FUN", RDT: "p-RDT", CMT: "p-CMT", WEB: "p-WEB", REF: "p-REF", GH: "p-GH" };
+  function run(code) {
+    code = String(code || "").trim().toUpperCase().replace(/\s*<?GO>?$/, "");
+    if (code === "R" || code === "REFRESH") { refresh(); return true; }
+    if (code === "HELP") { $("cmd").value = ""; $("cmd").placeholder = "DL downloads, FUN funnel, RDT reddit, CMT comments, WEB visits, GH github, R refresh"; return true; }
+    var id = CODES[code]; if (!id) return false;
+    var p = $(id); p.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    p.classList.remove("flash"); void p.offsetWidth; p.classList.add("flash");
+    return true;
+  }
+  $("cmd-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var ok = run($("cmd").value);
+    if (ok) $("cmd").value = ""; else { $("cmd").value = ""; $("cmd").placeholder = "Unknown command. Try HELP."; }
+  });
+  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { run(b.getAttribute("data-go")); }); });
+  var KEYS = { "1": "DL", "2": "FUN", "3": "RDT", "4": "CMT", "5": "WEB", "6": "GH", "r": "R" };
+  document.addEventListener("keydown", function (e) {
+    if (e.target.tagName === "INPUT" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "/") { e.preventDefault(); $("cmd").focus(); return; }
+    if (KEYS[e.key.toLowerCase()]) run(KEYS[e.key.toLowerCase()]);
+  });
+
+  var resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (data && data.visits.ok) drawDays(data.visits.data.days); }, 150);
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

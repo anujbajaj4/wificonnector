@@ -179,6 +179,12 @@ workflow whenever it changes on `main`. Its images (favicon, the link preview
 image) come from `app/tools/make_site_images.py`, which draws them from the
 app icon.
 
+### Launch dashboard
+
+[`terminal/`](terminal/README.md) is a private, Bloomberg-style dashboard of
+downloads, visits, the install funnel and the Reddit post, deployed on
+Vercel. Its README has the setup.
+
 ### Releasing
 
 Bump `VERSION` in `bin/wificonnector`, merge to `main`, then run

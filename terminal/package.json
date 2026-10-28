@@ -1,0 +1,6 @@
+{
+  "name": "wificonnector-terminal",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" }
+}
