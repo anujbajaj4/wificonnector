@@ -66,6 +66,7 @@ case $url in
         # The gateway's own web server, as VIT's redirects to the portal.
         code=${STUB_GATEWAY_CODE:-302}
         location=${STUB_GATEWAY_LOCATION-http://phc.prontonetworks.com/cgi-bin/authlogin}
+        rc=${STUB_GATEWAY_RC:-0}
         ;;
     *authlogout*)
         printf '%s\n' "$url" >> "$STUB_DIR/logout_urls"

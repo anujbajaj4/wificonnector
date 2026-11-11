@@ -1075,7 +1075,7 @@ kbd.key {
           <button type="button" aria-pressed="false" data-state="busy"><span class="glyph"><svg class="ico"><use href="#i-sync"/></svg></span><span><strong>Working</strong><small>Logging in or out right now.</small></span></button>
           <button type="button" aria-pressed="false" data-state="alert"><span class="glyph"><svg class="ico"><use href="#i-wifi-alert"/></svg></span><span><strong>Needs a look</strong><small>Wrong password, no internet yet, or no details saved.</small></span></button>
           <button type="button" aria-pressed="false" data-state="paused"><span class="glyph"><svg class="ico"><use href="#i-pause"/></svg></span><span><strong>Paused</strong><small>Auto-login is off until you resume it.</small></span></button>
-          <button type="button" aria-pressed="false" data-state="other"><span class="glyph"><svg class="ico"><use href="#i-wifi-circle"/></svg></span><span><strong>Not VIT</strong><small>Another network, so it stays out of the way.</small></span></button>
+          <button type="button" aria-pressed="false" data-state="other"><span class="glyph"><svg class="ico"><use href="#i-wifi-circle"/></svg></span><span><strong>Not VIT</strong><small>Home, a hotspot or a café. It stays out of the way.</small></span></button>
         </div>
         <div class="mini-screen" aria-live="polite">
           <div class="menubar">
@@ -1669,7 +1669,7 @@ kbd.key {
     busy: { g: "busy", h: "Logging in…", d: "26BCE0000 · VIT portal (pronto) detected (23:54)", dot: "busy", p: "Pause Auto-Login" },
     alert: { g: "alert", h: "Login refused: check your password", d: "26BCE0000 · Login refused; check your credentials (23:54)", dot: "warn", p: "Pause Auto-Login" },
     paused: { g: "paused", h: "Auto-login paused", d: "26BCE0000 · Auto-login paused. (23:54)", dot: "warn", p: "Resume Auto-Login" },
-    other: { g: "other", h: "Not on VIT Wi-Fi", d: "26BCE0000 · Network 'Home' is not a VIT network (23:54)", dot: "off", p: "Pause Auto-Login" }
+    other: { g: "other", h: "Online, not on VIT Wi-Fi", d: "26BCE0000 · Online on another network (23:54)", dot: "off", p: "Pause Auto-Login" }
   };
   var legendButtons = Array.prototype.slice.call(document.querySelectorAll("#legend button"));
   legendButtons.forEach(function (button) {
@@ -1700,7 +1700,7 @@ kbd.key {
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Downloads") +
         '<div class="mac-body"><div class="list-head">Today</div><div class="file-row hl">' + DISK + 'WiFiConnector.dmg<small>429 KB</small></div></div>' +
       '</div></div>' + cap(1, "<b>Open WiFiConnector.dmg</b> from your Downloads.") + '</figure>' +
-      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.3.2") +
+      '<figure><div class="vis-stage"><div class="mac-win">' + bar("WiFiConnector 0.4.1") +
         '<div class="dmg-body"><div class="dmg-item">' + APP_TILE + 'WiFiConnector</div>' +
         '<svg class="dmg-arrow" viewBox="0 0 70 34" aria-hidden="true"><path d="M4 26C20 4 46 4 62 22" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M54 21l9 2-2-9" fill="none" stroke="#0A7AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '<div class="dmg-item hl">' + FOLDER + 'Applications</div></div>' +
@@ -1720,7 +1720,7 @@ kbd.key {
     terminal:
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Terminal") +
         '<div class="term-mock"><span><span class="p">~ %</span> curl -fsSL https://anujbajaj4.github.io/wificonnector/install.sh | bash</span>' +
-        '<span>==&gt; Downloading WiFiConnector…</span><span>==&gt; Copying WiFiConnector to /Applications…</span><span class="ok">==&gt; Installed WiFiConnector 0.3.2.</span></div>' +
+        '<span>==&gt; Downloading WiFiConnector…</span><span>==&gt; Copying WiFiConnector to /Applications…</span><span class="ok">==&gt; Installed WiFiConnector 0.4.1.</span></div>' +
       '</div></div>' + cap(1, "Paste with <b>⌘V</b> and press <b>Return</b>. It takes a few seconds.") + '</figure>',
     welcome:
       '<figure><div class="vis-stage"><div class="mac-win">' + bar("Welcome to WiFiConnector") +
