@@ -11,7 +11,7 @@
 
 set -u
 
-VERSION="0.4.0"
+VERSION="0.4.1"
 
 # launchd starts jobs with a minimal PATH; make sure the system tools resolve.
 export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -39,6 +39,8 @@ REJECT_BACKOFF_SECONDS=300
 # auto-login waits this long. Online is still noticed meanwhile; this only
 # holds back logins (e.g. when the check fails for reasons the login can't fix).
 UNVERIFIED_BACKOFF_SECONDS=60
+# How long "the gateway didn't answer" stands before asking it again.
+NETWORK_RECHECK_SECONDS=300
 
 # Right after joining or waking, macOS can leave the Mac without a default
 # route for a while before it sends traffic out over the captive network. A
@@ -306,6 +308,57 @@ detect_profile() {
     return 1
 }
 
+# A network is told apart by its gateway and DNS server.
+network_key() {
+    printf '%s|%s' "$(gateway_ip "$1")" "$NETWORK_DNS"
+}
+
+remember_network() {
+    printf '%s %s %s\n' "$1" "$(date +%s)" "$(network_key "$2")" > "$STATE_DIR/network"
+}
+
+# Whether the network the Mac is online on is VIT's. Only the menu-bar icon
+# depends on it: online elsewhere (home, a hotspot) shows as "not VIT". The
+# network's name decides when macOS reveals it. Otherwise the gateway is
+# asked once per network, since VIT's redirects to the portal even after
+# login, and the answer is remembered; a gateway that didn't answer is asked
+# again after NETWORK_RECHECK_SECONDS.
+on_vit_network() {
+    local device=$1 ssid kind="" since=0 saved="" key
+    ssid=$(read_ssid "$device")
+    if [ -n "$ssid" ]; then
+        is_campus_ssid "$ssid"
+        return
+    fi
+    key=$(network_key "$device")
+    [ -f "$STATE_DIR/network" ] && read -r kind since saved < "$STATE_DIR/network"
+    if [ "$saved" = "$key" ]; then
+        case $kind in
+            vit) return 0 ;;
+            other) return 1 ;;
+            unknown) [ $(($(date +%s) - since)) -lt "$NETWORK_RECHECK_SECONDS" ] && return 1 ;;
+        esac
+    fi
+    if ! probe_gateway "$(gateway_ip "$device")"; then
+        kind=unknown
+    elif detect_profile >/dev/null; then
+        kind=vit
+    else
+        kind=other
+    fi
+    remember_network "$kind" "$device"
+    [ "$kind" = vit ]
+}
+
+# macOS opens its own login window (Captive Network Assistant) when it joins
+# a network with a portal, and doesn't always close it once we've logged in.
+# Its process name is too long for pkill -x, hence the path. Set
+# CLOSE_LOGIN_WINDOW=no in the config to leave the window alone.
+close_login_window() {
+    [ "$(lower "$(config_get CLOSE_LOGIN_WINDOW)")" = no ] && return 0
+    pkill -f 'Captive Network Assistant.app/Contents/MacOS/' >/dev/null 2>&1 || true
+}
+
 # After a login the portal can take a moment to open up, and a VPN tunnel a
 # few more seconds to reconnect through it: probe now, then up to five more
 # times two seconds apart (Latch allows three).
@@ -441,7 +494,11 @@ check_and_login() {
     fi
     case $PROBE_RESULT in
         online)
-            transition online "Online ($device, $ip)"
+            if on_vit_network "$device"; then
+                transition online "Online ($device, $ip)"
+            else
+                transition online-elsewhere "Online on another network ($device, $ip); nothing to do here"
+            fi
             return 0
             ;;
         dns|error)
@@ -497,7 +554,9 @@ check_and_login() {
             rm -f "$STATE_DIR/rejected"
             if revalidate; then
                 rm -f "$STATE_DIR/unverified"
+                remember_network vit "$device"
                 transition online "Logged in; internet is up"
+                close_login_window
                 notify "Logged in to VIT Wi-Fi"
                 return 0
             fi

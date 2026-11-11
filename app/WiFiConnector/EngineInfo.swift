@@ -51,7 +51,7 @@ extension EngineInfo {
         switch state {
         case "online", "": return "wifi"
         case "disconnected", "no-wifi": return "wifi.slash"
-        case "foreign-portal", "not-vit": return "wifi.circle"
+        case "foreign-portal", "not-vit", "online-elsewhere": return "wifi.circle"
         default: return "wifi.exclamationmark"
         }
     }
@@ -68,6 +68,7 @@ extension EngineInfo {
         case "probe-failed": return "Can't check the connection"
         case "foreign-portal": return "Not a VIT login page"
         case "not-vit": return "Not on VIT Wi-Fi"
+        case "online-elsewhere": return "Online, not on VIT Wi-Fi"
         case "rejected", "backoff": return "Login refused: check your password"
         case "no-internet", "backoff-unverified": return "Logged in, but no internet yet"
         case "no-credentials": return "No credentials saved"

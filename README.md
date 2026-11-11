@@ -138,6 +138,7 @@ again, so a wrong password can't get your account locked.
 | `USERNAME` | `26BCE0000` | set by `setup` |
 | `ALLOWED_SSIDS` | `MH-Block,LH-Block` | extra network names to accept besides those containing "VIT" |
 | `WIFI_DEVICE` | `en1` | override the Wi-Fi device if detection picks the wrong one |
+| `CLOSE_LOGIN_WINDOW` | `no` | leave macOS's own login window open after logging in (it's closed by default) |
 
 ## Troubleshooting
 
@@ -149,7 +150,7 @@ again, so a wrong password can't get your account locked.
 | Log says "Login refused" | Check your password with `wificonnector setup`, then `wificonnector login` |
 | A "security wants to access" dialog | Choose **Always Allow**. It shows up if the Keychain item was created some other way |
 | No notifications | System Settings ▸ Notifications ▸ Script Editor, allow notifications |
-| macOS's own login window still pops up | It closes once you're logged in. To disable it for all networks, see [the docs](docs/HOW-IT-WORKS.md#the-captive-network-assistant) |
+| macOS's own login window still pops up | wificonnector closes it once it has logged you in. To stop it opening on any network, see [the docs](docs/HOW-IT-WORKS.md#the-captive-network-assistant) |
 | Agent not running | `launchctl print gui/$(id -u)/com.wificonnector.agent`, then `wificonnector install` again |
 
 ## Development

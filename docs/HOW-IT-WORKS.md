@@ -347,8 +347,9 @@ That gap is why every change still gets a run on a real Mac.
 
 When macOS notices a portal it opens its own little login window, the
 *Captive Network Assistant*. wificonnector usually logs in within seconds, and
-the window then reports that you're connected and can be closed. If it bothers
-you, you can turn it off for **every** network (including hotel and airport
+then closes that window for you (put `CLOSE_LOGIN_WINDOW=no` in the config to
+keep it). If seeing it at all bothers you, you can turn it off for **every**
+network (including hotel and airport
 Wi-Fi, where you'd then log in through a normal browser):
 
 ```sh

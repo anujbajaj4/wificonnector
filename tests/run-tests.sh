@@ -249,13 +249,71 @@ all_dns_blocked_no_gateway() {
     check "state is probe-failed" [ "$(state)" = probe-failed ]
 }
 
-online_never_asks_gateway() {
-    # Logged in, the gateway may still redirect to the portal; that must
-    # never trigger a login.
+online_gateway_portal_never_logs_in() {
+    # Logged in, the gateway still redirects to the portal. That says the
+    # network is VIT's, and must never trigger a login.
     with_credentials
     wc_run run
-    check "gateway not requested" not grep -qF "http://172.18.0.1/" "$STUB_DIR/curl_calls"
+    check "state is online" [ "$(state)" = online ]
     check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+}
+
+online_elsewhere() {
+    # Home Wi-Fi or a hotspot: online, and the gateway isn't VIT's.
+    with_credentials
+    export STUB_GATEWAY_LOCATION="" STUB_GATEWAY_CODE=200
+    wc_run run
+    check "state is online-elsewhere" [ "$(state)" = online-elsewhere ]
+    wc_run run
+    check "gateway asked once per network" [ "$(grep -cF "http://172.18.0.1/" "$STUB_DIR/curl_calls")" = 1 ]
+    export STUB_GATEWAY=10.0.0.1 STUB_GATEWAY_LOCATION="http://phc.prontonetworks.com/cgi-bin/authlogin" STUB_GATEWAY_CODE=302
+    wc_run run
+    check "a new network is asked again" [ "$(state)" = online ]
+    check "no login POST" [ "$(count "$STUB_DIR/login_urls")" = 0 ]
+}
+
+online_elsewhere_by_name() {
+    with_credentials
+    export STUB_SSID="Home Wi-Fi"
+    wc_run run
+    check "state is online-elsewhere" [ "$(state)" = online-elsewhere ]
+    check "gateway not asked" not grep -qsF "http://172.18.0.1/" "$STUB_DIR/curl_calls"
+    export STUB_SSID="VIT-Hostel"
+    wc_run run
+    check "a VIT name is online" [ "$(state)" = online ]
+}
+
+online_gateway_silent() {
+    with_credentials
+    export STUB_GATEWAY_RC=7
+    wc_run run
+    check "state is online-elsewhere" [ "$(state)" = online-elsewhere ]
+    wc_run run
+    check "not asked again straight away" [ "$(grep -cF "http://172.18.0.1/" "$STUB_DIR/curl_calls")" = 1 ]
+}
+
+login_closes_macos_login_window() {
+    with_credentials
+    behind_pronto
+    wc_run run
+    check "state is online" [ "$(state)" = online ]
+    check "login window closed" grep -qF "Captive Network Assistant" "$STUB_DIR/pkill_calls"
+    check "network remembered as VIT" grep -q "^vit " "$STATE/network"
+}
+
+login_window_left_alone_when_asked() {
+    with_credentials
+    printf 'CLOSE_LOGIN_WINDOW=no\n' >> "$HOME/.config/wificonnector/config"
+    behind_pronto
+    wc_run run
+    check "state is online" [ "$(state)" = online ]
+    check "pkill not run" [ ! -f "$STUB_DIR/pkill_calls" ]
+}
+
+online_leaves_login_window_alone() {
+    with_credentials
+    wc_run run
+    check "pkill not run" [ ! -f "$STUB_DIR/pkill_calls" ]
 }
 
 no_network_dns_resolves_normally() {
@@ -471,6 +529,8 @@ info_reports_state() {
     wc_run run
     mkdir -p "$HOME/Library/Logs"
     printf '2026-10-25 23:54:40 Logged in; internet is up\n' > "$HOME/Library/Logs/wificonnector.log"
+    local requests
+    requests=$(count "$STUB_DIR/curl_calls")
     wc_run info
     check "version" grep -qx "version=$(sed -n 's/^VERSION="\(.*\)"$/\1/p' "$SCRIPT")" "$SANDBOX/out"
     check "state" grep -qx "state=online" "$SANDBOX/out"
@@ -480,7 +540,7 @@ info_reports_state() {
     check "agent loaded" grep -qx "agent=yes" "$SANDBOX/out"
     check "last log line" grep -qx "last=2026-10-25 23:54:40 Logged in; internet is up" "$SANDBOX/out"
     check "never reads the password" not grep -q -- "-w" "$STUB_DIR/security_calls"
-    check "no network requests (only the earlier run's probe)" [ "$(grep -c . "$STUB_DIR/curl_calls")" = 1 ]
+    check "no network requests" [ "$(count "$STUB_DIR/curl_calls")" = "$requests" ]
 }
 
 info_when_nothing_is_set_up() {
@@ -549,7 +609,13 @@ for t in \
     all_dns_blocked_uses_gateway_fingerprint \
     all_dns_blocked_foreign_gateway \
     all_dns_blocked_no_gateway \
-    online_never_asks_gateway \
+    online_gateway_portal_never_logs_in \
+    online_elsewhere \
+    online_elsewhere_by_name \
+    online_gateway_silent \
+    login_closes_macos_login_window \
+    login_window_left_alone_when_asked \
+    online_leaves_login_window_alone \
     no_network_dns_resolves_normally \
     vpn_refused_uses_gateway_fingerprint \
     vpn_refused_foreign_gateway \
