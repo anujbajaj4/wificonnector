@@ -39,16 +39,18 @@ final class StatusModel: ObservableObject {
     /// everything up again on every restart.
     var needsSetup: Bool { !info.configured || !info.agentFile }
 
-    /// After a restart, gives macOS time to load the agent, then reloads it
-    /// if it still isn't running. Opens the welcome window only if the saved
+    /// After a restart, gives macOS a few seconds to load the agent, checking
+    /// every second, then reloads it if it still isn't running; reloading an
+    /// agent macOS was about to load is harmless, and waiting longer would
+    /// only delay auto-login. Opens the welcome window only if the saved
     /// password is really gone.
     func settleAfterLaunch(showWelcome: @escaping () -> Void) {
         DispatchQueue.global(qos: .utility).async {
             var current = EngineInfo(parsing: Engine.run(["info"]).output)
             var waited = 0
-            while (!current.agent || !current.credentials) && waited < 20 {
-                Thread.sleep(forTimeInterval: 2)
-                waited += 2
+            while (!current.agent || !current.credentials) && waited < 8 {
+                Thread.sleep(forTimeInterval: 1)
+                waited += 1
                 current = EngineInfo(parsing: Engine.run(["info"]).output)
             }
             var message = ""
