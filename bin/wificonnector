@@ -11,7 +11,7 @@
 
 set -u
 
-VERSION="0.4.1"
+VERSION="0.4.2"
 
 # launchd starts jobs with a minimal PATH; make sure the system tools resolve.
 export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -732,6 +732,11 @@ cmd_info() {
     echo "user=$user"
     echo "credentials=$credentials"
     echo "agent=$agent"
+    # Whether setup was ever done, from files alone. Right after a restart the
+    # agent may not be loaded yet, so the app needs these to tell "not set up"
+    # from "still starting".
+    echo "configured=$([ -n "$user" ] && echo yes || echo no)"
+    echo "agent_file=$([ -f "$AGENT_PLIST" ] && echo yes || echo no)"
     echo "agent_version=$agent_version"
     echo "last=$last"
 }

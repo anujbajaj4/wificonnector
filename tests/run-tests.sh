@@ -534,6 +534,8 @@ info_reports_state() {
     wc_run info
     check "version" grep -qx "version=$(sed -n 's/^VERSION="\(.*\)"$/\1/p' "$SCRIPT")" "$SANDBOX/out"
     check "state" grep -qx "state=online" "$SANDBOX/out"
+    check "configured" grep -qx "configured=yes" "$SANDBOX/out"
+    check "no agent file yet" grep -qx "agent_file=no" "$SANDBOX/out"
     check "not paused" grep -qx "paused=no" "$SANDBOX/out"
     check "user" grep -qx "user=22BCE1234" "$SANDBOX/out"
     check "credentials found" grep -qx "credentials=yes" "$SANDBOX/out"

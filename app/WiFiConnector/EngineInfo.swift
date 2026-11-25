@@ -10,6 +10,10 @@ struct EngineInfo: Equatable {
     var credentials = false
     var agent = false
     var agentVersion = ""
+    /// Setup was done once: a registration number is saved.
+    var configured = false
+    /// The agent's launchd file exists, loaded or not.
+    var agentFile = false
     /// The newest line of the background agent's log.
     var last = ""
 
@@ -28,6 +32,8 @@ struct EngineInfo: Equatable {
             case "credentials": credentials = value == "yes"
             case "agent": agent = value == "yes"
             case "agent_version": agentVersion = value
+            case "configured": configured = value == "yes"
+            case "agent_file": agentFile = value == "yes"
             case "last": last = value
             default: break
             }
