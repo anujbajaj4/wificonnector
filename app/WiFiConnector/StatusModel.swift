@@ -33,8 +33,42 @@ final class StatusModel: ObservableObject {
 
     var symbol: String { info.symbol(busy: busy) }
 
-    /// Nothing will log in automatically until both of these are done.
-    var needsSetup: Bool { !info.credentials || !info.agent }
+    /// Setup was never done. Judged from saved files only: right after a
+    /// restart the agent may not be loaded yet and the Keychain may be slow
+    /// to answer, and showing the welcome window then made people set
+    /// everything up again on every restart.
+    var needsSetup: Bool { !info.configured || !info.agentFile }
+
+    /// After a restart, gives macOS time to load the agent, then reloads it
+    /// if it still isn't running. Opens the welcome window only if the saved
+    /// password is really gone.
+    func settleAfterLaunch(showWelcome: @escaping () -> Void) {
+        DispatchQueue.global(qos: .utility).async {
+            var current = EngineInfo(parsing: Engine.run(["info"]).output)
+            var waited = 0
+            while (!current.agent || !current.credentials) && waited < 20 {
+                Thread.sleep(forTimeInterval: 2)
+                waited += 2
+                current = EngineInfo(parsing: Engine.run(["info"]).output)
+            }
+            var message = ""
+            if !current.agent {
+                let reload = Engine.run(["install"])
+                current = EngineInfo(parsing: Engine.run(["info"]).output)
+                if !current.agent || !reload.succeeded {
+                    message = "macOS stopped the background helper. Turn on WiFiConnector in "
+                        + "System Settings ▸ General ▸ Login Items & Extensions, then choose "
+                        + "Install Background Agent."
+                }
+            }
+            let ready = current
+            DispatchQueue.main.async {
+                self.info = ready
+                if !message.isEmpty { self.lastAction = message }
+                if !ready.credentials { showWelcome() }
+            }
+        }
+    }
 
     // MARK: Reading the state
 

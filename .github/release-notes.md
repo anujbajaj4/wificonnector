@@ -1,5 +1,9 @@
 Automatic login to VIT hostel Wi-Fi, from your Mac's menu bar. Needs macOS 13 (Ventura) or later; works on Apple silicon and Intel Macs.
 
+## What's new in 0.4.2
+
+- **No more setting up again after a restart.** WiFiConnector used to check too early after you logged in, before macOS had started its background helper, and asked for your details again. It now waits, restarts the helper itself if needed, and only asks if your password is really gone.
+
 ## What's new in 0.4.1
 
 - **The icon shows when you're not on VIT Wi-Fi.** On home Wi-Fi or a hotspot it now switches to the "Not VIT" icon. Before, it only did that on networks with their own login page.

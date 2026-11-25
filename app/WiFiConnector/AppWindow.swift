@@ -48,13 +48,17 @@ final class AppWindow {
     }
 }
 
-/// Opens the welcome window once launch has finished, if nothing will log in
-/// automatically yet.
+/// Opens the welcome window once launch has finished if setup was never done;
+/// after a restart, waits for the agent instead (see settleAfterLaunch).
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let model = StatusModel.shared
+        let showWelcome = { AppWindow.welcome.show { close in WelcomeView(model: model, close: close) } }
         if model.needsSetup {
-            AppWindow.welcome.show { close in WelcomeView(model: model, close: close) }
+            showWelcome()
+        } else if !model.info.agent || !model.info.credentials {
+            // Set up before, but not running yet: usually just a restart.
+            model.settleAfterLaunch(showWelcome: showWelcome)
         }
     }
 }
